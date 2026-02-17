@@ -1,0 +1,154 @@
+# GitHub Labels Configuration for VISIONFLOW
+# Can be used with github-label-sync or other label management tools
+#
+# Usage with github-label-sync:
+#   npm install -g github-label-sync
+#   github-label-sync --access-token $GITHUB_TOKEN --labels .github/labels.yml GabrielaMoretti/VISIONFLOW
+
+# ==========================================
+# CAMADAS (Layers)
+# ==========================================
+
+- name: "camada-1-core"
+  color: "0052CC"
+  description: "Layer 1: Core Engine - Image loading, canvas, layers, export"
+
+- name: "camada-2-color"
+  color: "00AA00"
+  description: "Layer 2: Color Flow Engine - Color grading, tone mapping, LUTs"
+
+- name: "camada-3-lenses"
+  color: "FFD700"
+  description: "Layer 3: Lens Simulation - Bokeh, vignette, distortion, chromatic aberration"
+
+- name: "camada-4-ia"
+  color: "FF8800"
+  description: "Layer 4: IA Processing - Segmentation, depth estimation, object removal"
+
+- name: "camada-5-campaign"
+  color: "DD0000"
+  description: "Layer 5: Campaign Management - Batch processing, presets, workflows"
+
+- name: "camada-6-ux"
+  color: "8800DD"
+  description: "Layer 6: UX/UI - Interface design, user experience, accessibility"
+
+# ==========================================
+# PRIORIDADE (Priority)
+# ==========================================
+
+- name: "priority-high"
+  color: "B60205"
+  description: "High priority - Should be addressed immediately"
+
+- name: "priority-medium"
+  color: "FFA500"
+  description: "Medium priority - Important but not urgent"
+
+- name: "priority-low"
+  color: "90EE90"
+  description: "Low priority - Nice to have"
+
+# ==========================================
+# TIPO (Type)
+# ==========================================
+
+- name: "feature"
+  color: "84B6EB"
+  description: "New feature or enhancement"
+
+- name: "setup"
+  color: "CCCCCC"
+  description: "Project setup and infrastructure"
+
+- name: "bug"
+  color: "EE0000"
+  description: "Bug or error that needs fixing"
+
+- name: "documentation"
+  color: "0E8A16"
+  description: "Documentation improvements"
+
+- name: "refactor"
+  color: "FBCA04"
+  description: "Code refactoring without changing functionality"
+
+- name: "performance"
+  color: "FF69B4"
+  description: "Performance improvements"
+
+- name: "security"
+  color: "800080"
+  description: "Security-related issues"
+
+# ==========================================
+# ESTADO (Status)
+# ==========================================
+
+- name: "status-blocked"
+  color: "D73A4A"
+  description: "Blocked by another issue or external dependency"
+
+- name: "status-in-progress"
+  color: "0E8A16"
+  description: "Currently being worked on"
+
+- name: "status-needs-review"
+  color: "FFA500"
+  description: "Needs code review"
+
+- name: "status-needs-testing"
+  color: "FBCA04"
+  description: "Needs testing before merging"
+
+# ==========================================
+# DIFICULDADE (Difficulty)
+# ==========================================
+
+- name: "difficulty-beginner"
+  color: "7057FF"
+  description: "Good for newcomers to the project"
+
+- name: "difficulty-intermediate"
+  color: "008672"
+  description: "Requires some knowledge of the codebase"
+
+- name: "difficulty-advanced"
+  color: "5319E7"
+  description: "Requires deep knowledge of the system"
+
+# ==========================================
+# OUTROS (Other)
+# ==========================================
+
+- name: "help-wanted"
+  color: "008672"
+  description: "Extra attention is needed - looking for contributors"
+
+- name: "good-first-issue"
+  color: "7057FF"
+  description: "Good for newcomers"
+
+- name: "question"
+  color: "D876E3"
+  description: "Further information is requested"
+
+- name: "wontfix"
+  color: "FFFFFF"
+  description: "This will not be worked on"
+
+- name: "duplicate"
+  color: "CFD3D7"
+  description: "This issue or pull request already exists"
+
+- name: "invalid"
+  color: "E4E669"
+  description: "This doesn't seem right"
+
+- name: "dependencies"
+  color: "0366D6"
+  description: "Pull requests that update a dependency file"
+
+- name: "testing"
+  color: "FBCA04"
+  description: "Related to testing"
