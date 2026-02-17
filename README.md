@@ -1,260 +1,356 @@
 # 🎥 VISIONFLOW
 
-**Professional Image Editor by Physical Control and Intuitive Flow**
+**Editor de Imagens Profissional com Processamento Físico e Óptico**
 
-> Transform mobile captures into cinematographic quality images through physical-based optical processing — without AI generation.
-
----
-
-## 📋 Overview
-
-**VISIONFLOW** is a professional post-production image editor designed for contemporary creators, photographers, visual artists, and producers. It bridges the gap between professional studio pipelines and accessible mobile editing.
-
-### Core Philosophy
-
-> "The image is not recreated — it is revealed."
-
-VISIONFLOW reads, separates, calibrates, and refines the original photograph while respecting its optical integrity. Unlike AI-driven editors that regenerate images, VISIONFLOW manipulates the actual physical properties of light, color, and lens characteristics.
+> Transforme imagens em qualidade cinematográfica através de processamento baseado em física óptica — criação multi-plataforma sem regeneração por IA.
 
 ---
 
-## ✨ Key Features
+## 📋 Visão Geral
 
-### 🔬 **Technical Analysis**
-- Automatic EXIF metadata extraction (camera, lens, settings)
-- Histogram and light map generation
-- Image structure analysis (foreground, background, lighting)
+**VISIONFLOW** é um editor de imagens profissional desenvolvido como **protótipo Web com Docker**, focado em processamento físico e óptico para criadores contemporâneos, fotógrafos, artistas visuais e produtores de conteúdo multi-plataforma.
 
-### 🎨 **Physical-Based Processing**
-- **Layer Separation**: Non-destructive masks for foreground, depth, materials
-- **Colorimetry**: Perceptual color correction using LAB/LCH spaces
-- **Depth Control**: Physically accurate bokeh simulation
-- **Lens Simulation**: Real optical characteristics (vignette, flare, distortion)
-- **Texture Refinement**: Frequency separation, grain, microcontrast
+### Filosofia Central
 
-### 🎬 **Professional Workflow**
-- ACES-compatible color pipeline
-- 3D LUT generation and export
-- Non-destructive editing
-- RAW format support (CR2, NEF, DNG, etc.)
-- HEIC/HEIF support
+> "A imagem não é recriada — ela é revelada."
+
+VISIONFLOW manipula as propriedades físicas reais de luz, cor e características ópticas, respeitando a integridade da fotografia original. Diferente de editores baseados em IA que regeneram imagens, VISIONFLOW processa opticamente sem destruir a essência da captura.
 
 ---
 
-## 🗂️ Documentation
+## ✨ Funcionalidades Principais
 
-- **[ARCHITECTURE.md](./ARCHITECTURE.md)** - System architecture and technology stack
-- **[PROJECT_STRUCTURE.md](./PROJECT_STRUCTURE.md)** - Folder organization and module design
-- **[IMPLEMENTATION_GUIDE.md](./IMPLEMENTATION_GUIDE.md)** - Step-by-step implementation instructions
-- **[LIBRARIES.md](./LIBRARIES.md)** - Detailed library integration guide
-- **[REFERENCE_REPOSITORIES.md](./REFERENCE_REPOSITORIES.md)** - Open-source references to study
+### 🔵 **CORE ENGINE (Fundação)**
+- Image Loader com suporte a JPEG, PNG, RAW
+- Canvas Editor interativo (Fabric.js)
+- Sistema de Camadas com blend modes e opacidade
+- Export Engine otimizado (PNG/JPG/WebP)
 
----
+### 🟢 **COLOR FLOW ENGINE**
+- Palette Extractor (K-Means clustering)
+- Tone Mapping (Shadows/Midtones/Highlights)
+- Ajustes HSL precisos
+- Sistema LUT (Lookup Tables 3D)
 
-## 🛠️ Technology Stack
+### 🟡 **VIRTUAL LENS RACK**
+- Depth Map Generator (MiDaS via TensorFlow.js)
+- Lens Blur com bokeh realista (WebGL)
+- Simulação de Distorção (Barrel/Pincushion)
+- Chromatic Aberration
 
-### Frontend
-- **React Native** + **Expo** - Cross-platform (iOS, Android, Web, Desktop)
-- **Redux Toolkit** - State management
-- **React Navigation** - Navigation
+### 🟠 **IA ASSISTIVA (Baixa Interferência)**
+- Background Removal (SAM/U²-Net)
+- Super-Resolution (ESRGAN)
+- Noise Reduction (bilateral filter)
+- Smart Crop com detecção facial
 
-### Image Processing
-- **OpenCV.js** - Computer vision and segmentation
-- **Sharp** / **Jimp** - High-performance image manipulation
-- **exifr** - EXIF metadata extraction
-- **Culori** / **Color.js** - Color science and conversions
-
-### GPU Acceleration
-- **Three.js** - WebGL-based processing
-- **gpu.js** - GPU computing
-- **Custom GLSL shaders** - Real-time effects
-
-### Advanced Features
-- **libraw** - RAW image processing
-- **OpenColorIO** - Professional color management
-- **MiDaS** (optional) - Depth estimation
-- **U^2-Net** (optional) - Object segmentation
+### 🔴 **MULTI-MODAL CAMPAIGN**
+- Template System (Spotify Canvas, Instagram, YouTube)
+- Safe Zone Overlay dinâmicas
+- Batch Export organizado
+- Preset Manager (VIP - Visual Identity Presets)
 
 ---
 
-## 🚀 Quick Start
+## 🗂️ Documentação
 
-### Prerequisites
+### Documentação Principal
+- **[ROADMAP.md](./docs/ROADMAP.md)** - Planejamento de desenvolvimento por camadas funcionais
+- **[ARCHITECTURE.md](./docs/ARCHITECTURE.md)** - Arquitetura Web + Docker completa
+- **[SCREENS_SPECIFICATION.md](./docs/SCREENS_SPECIFICATION.md)** - Especificação detalhada das 7 telas
+- **[DOCKER_SETUP.md](./docs/DOCKER_SETUP.md)** - Configuração completa do Docker
+- **[PROJECT_STRUCTURE.md](./docs/PROJECT_STRUCTURE.md)** - Estrutura de pastas frontend/backend
+- **[CONTRIBUTING.md](./CONTRIBUTING.md)** - Guia para contribuidores
 
-```bash
-node >= 18.0.0
-npm >= 9.0.0
-expo-cli
+### Documentação Legada
+- Ver `/docs/legacy/` para documentação da versão anterior (React Native/Electron)
+
+---
+
+## 🛠️ Stack Tecnológica
+
+### Frontend (Next.js/React)
+```
+┌─────────────────────────────────────┐
+│   Frontend Web (Next.js 14)         │
+│   - Fabric.js (Canvas Editor)       │
+│   - WebGL (Shaders GLSL)            │
+│   - Zustand (State Management)      │
+│   - TensorFlow.js (IA client-side)  │
+└─────────────────────────────────────┘
 ```
 
-### Installation
+- **Next.js 14+** - Framework React com SSR
+- **Fabric.js** - Editor de canvas interativo
+- **WebGL 2.0** - Processamento GPU (shaders GLSL)
+- **Zustand** - Gerenciamento de estado
+- **TensorFlow.js** - IA client-side (modelos leves)
+- **Tailwind CSS + shadcn/ui** - Design system
 
-```bash
-# Clone the repository
-git clone https://github.com/GabrielaMoretti/Axis.git
-cd Axis
-
-# Initialize the project (see IMPLEMENTATION_GUIDE.md for detailed steps)
-npx create-expo-app visionflow --template expo-template-blank-typescript
-
-# Install dependencies
-npm install
-
-# Start development server
-npm start
+### Backend (Python/FastAPI)
+```
+┌─────────────────────────────────────┐
+│   Backend Python (FastAPI)          │
+│   - OpenCV (Visão Computacional)    │
+│   - Pillow (Image Processing)       │
+│   - TensorFlow/PyTorch (IA)         │
+│   - MiDaS, ESRGAN, U²-Net           │
+└─────────────────────────────────────┘
 ```
 
-### Development
+- **FastAPI** - Framework assíncrono de alta performance
+- **OpenCV** - Visão computacional e processamento de imagem
+- **Pillow** - Manipulação de imagem
+- **PyTorch/TensorFlow** - Modelos de IA (depth, upscaling, segmentation)
+- **NumPy/SciPy** - Computação científica
 
-```bash
-# Run on iOS
-npm run ios
-
-# Run on Android
-npm run android
-
-# Run on Web
-npm run web
-
-# Run tests
-npm test
-
-# Lint code
-npm run lint
+### Infraestrutura (Docker)
+```
+┌─────────────────────────────────────┐
+│          Docker Compose             │
+│   - Container Frontend (Node 20)    │
+│   - Container Backend (Python 3.11) │
+│   - Volumes para persistência       │
+└─────────────────────────────────────┘
 ```
 
 ---
 
-## 📐 Project Structure
+## 🚀 Quick Start com Docker
+
+### Pré-requisitos
+
+- **Docker** 24.0+ ([Instalar Docker](https://docs.docker.com/get-docker/))
+- **Docker Compose** 2.20+ (incluído no Docker Desktop)
+- **Git** para clonar o repositório
+
+### Instalação e Execução
+
+```bash
+# 1. Clonar repositório
+git clone https://github.com/GabrielaMoretti/VISIONFLOW.git
+cd VISIONFLOW
+
+# 2. Configurar variáveis de ambiente
+cp .env.example .env
+
+# 3. Iniciar containers (build + run)
+docker compose up --build
+
+# 4. Acessar aplicação
+# Frontend: http://localhost:3000
+# Backend API: http://localhost:8000
+# API Docs: http://localhost:8000/docs
+```
+
+### Comandos Úteis
+
+```bash
+# Parar containers
+docker compose down
+
+# Ver logs
+docker compose logs -f
+
+# Rebuild containers
+docker compose up --build
+
+# Executar testes
+docker compose exec backend pytest
+docker compose exec frontend npm test
+
+# Acessar shell do container
+docker compose exec backend bash
+docker compose exec frontend sh
+```
+
+Para instruções detalhadas, consulte [DOCKER_SETUP.md](./docs/DOCKER_SETUP.md).
+
+---
+
+## 📐 Estrutura do Projeto
 
 ```
 visionflow/
-├── src/
-│   ├── core/              # Image processing modules
-│   │   ├── analysis/      # EXIF, histogram, structure
-│   │   ├── separation/    # Layer separation engine
-│   │   ├── color/         # Colorimetry and grading
-│   │   ├── depth/         # Depth control and bokeh
-│   │   ├── lens/          # Lens simulation
-│   │   ├── texture/       # Refinement and grain
-│   │   └── export/        # LUT generation
-│   ├── processing/        # WebGL/GPU processing
-│   ├── ui/                # React components
-│   ├── state/             # Redux state management
-│   └── utils/             # Utilities
-├── assets/                # LUTs, lens profiles
-├── tests/                 # Unit and integration tests
-└── docs/                  # Additional documentation
+├── frontend/              # Aplicação Next.js/React
+│   ├── src/
+│   │   ├── app/           # Next.js App Router (pages)
+│   │   ├── components/    # Componentes React
+│   │   ├── lib/           # Lógica de negócio
+│   │   │   ├── canvas/    # Fabric.js engine
+│   │   │   ├── shaders/   # WebGL GLSL shaders
+│   │   │   └── ai/        # TensorFlow.js
+│   │   ├── store/         # Zustand state
+│   │   └── services/      # API calls
+│   ├── Dockerfile
+│   └── package.json
+│
+├── backend/               # API Python/FastAPI
+│   ├── api/
+│   │   └── routes/        # Endpoints REST
+│   ├── processing/        # Processamento de imagem
+│   │   ├── depth_map.py   # MiDaS
+│   │   ├── upscaling.py   # ESRGAN
+│   │   ├── segmentation.py # U²-Net
+│   │   └── color_flow.py
+│   ├── models/            # Cache de modelos IA
+│   ├── Dockerfile
+│   └── requirements.txt
+│
+├── docker-compose.yml     # Orquestração de containers
+├── docs/                  # Documentação completa
+│   ├── ROADMAP.md
+│   ├── ARCHITECTURE.md
+│   ├── SCREENS_SPECIFICATION.md
+│   ├── DOCKER_SETUP.md
+│   ├── PROJECT_STRUCTURE.md
+│   └── legacy/            # Docs da versão anterior
+└── volumes/               # Volumes Docker (gitignored)
+    ├── uploads/
+    ├── exports/
+    ├── models/
+    └── presets/
 ```
 
----
-
-## 🎯 Roadmap
-
-### Phase 1: Foundation (Weeks 1-4) ✅
-- [x] Architecture documentation
-- [ ] Project initialization
-- [ ] Basic UI shell
-- [ ] Image import (JPEG, PNG)
-- [ ] EXIF metadata reading
-
-### Phase 2: Core Processing (Weeks 5-10)
-- [ ] Histogram and analysis tools
-- [ ] Color correction (curves, white balance)
-- [ ] Layer separation prototype
-- [ ] RAW and HEIC support
-
-### Phase 3: Advanced Features (Weeks 11-16)
-- [ ] Depth map generation
-- [ ] Bokeh simulation
-- [ ] Lens profiles
-- [ ] Texture refinement
-
-### Phase 4: Look Builder (Weeks 17-20)
-- [ ] LUT generation
-- [ ] Color grading tools
-- [ ] Preset system
-- [ ] ACES integration
-
-### Phase 5: Polish (Weeks 21-24)
-- [ ] Performance optimization
-- [ ] WebAssembly compilation
-- [ ] UI/UX refinement
-- [ ] Testing and bug fixes
+Veja [PROJECT_STRUCTURE.md](./docs/PROJECT_STRUCTURE.md) para detalhes completos.
 
 ---
 
-## 🤝 Contributing
+## 🎯 Roadmap de Alto Nível
 
-Contributions are welcome! Please read our contributing guidelines before submitting PRs.
+O desenvolvimento segue uma arquitetura modular em **6 camadas de funcionalidades**:
 
-### Development Guidelines
+### 🔵 Camada 1: CORE ENGINE (Semanas 1-4)
+- Image Loader, Canvas Editor, Layer System, Export Engine
 
-1. Follow the TypeScript style guide
-2. Write tests for new features
-3. Document public APIs
-4. Keep modules focused and single-purpose
-5. Optimize for performance
+### 🟢 Camada 2: COLOR FLOW ENGINE (Semanas 5-8)
+- Palette Extractor, Tone Mapping, HSL Adjustments, LUT System
 
----
+### 🟡 Camada 3: VIRTUAL LENS RACK (Semanas 9-13)
+- Depth Map, Lens Blur, Distortion, Chromatic Aberration
 
-## 📖 Core Concepts
+### 🟠 Camada 4: IA ASSISTIVA (Semanas 14-18)
+- Background Removal, Super-Resolution, Denoising, Smart Crop
 
-### Non-Destructive Editing
-All edits are applied as parametric adjustments that can be modified or removed at any time without degrading the original image.
+### 🔴 Camada 5: MULTI-MODAL CAMPAIGN (Semanas 19-22)
+- Template System, Safe Zones, Batch Export, Preset Manager
 
-### Physical-Based Processing
-Instead of applying digital filters, VISIONFLOW simulates the physics of light, lenses, and color to achieve natural, professional results.
+### 🟣 Camada 6: INTERFACE & UX (Semanas 23-24)
+- Tooltips, Before/After, History/Undo, Guided Workflow
 
-### Layer Separation
-The engine analyzes the image structure and creates separate layers for foreground, background, depth, materials, and illumination — enabling precise, isolated adjustments.
-
-### Colorimetry
-Uses perceptual color spaces (LAB, LCH, OKLCH) and industry-standard tools (ΔE2000, ACES) to ensure accurate color representation across devices.
+**Veja o [ROADMAP.md](./docs/ROADMAP.md) completo para detalhes de cada sprint.**
 
 ---
 
-## 🎓 Learning Resources
+## 🤝 Contribuindo
 
-- [Image Processing Basics](./docs/learning/image-processing.md)
-- [Color Science Fundamentals](./docs/learning/color-science.md)
-- [WebGL for Image Processing](./docs/learning/webgl-guide.md)
-- [RAW Processing Pipeline](./docs/learning/raw-processing.md)
+Contribuições são bem-vindas! Por favor, leia nosso [CONTRIBUTING.md](./CONTRIBUTING.md) antes de submeter PRs.
 
----
+### Diretrizes de Desenvolvimento
 
-## 📄 License
+1. Seguir padrões de código TypeScript/Python
+2. Escrever testes para novas funcionalidades
+3. Documentar APIs públicas
+4. Manter módulos focados e com responsabilidade única
+5. Otimizar para performance
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+### Setup para Desenvolvimento
 
----
+```bash
+# Clonar repositório
+git clone https://github.com/GabrielaMoretti/VISIONFLOW.git
+cd VISIONFLOW
 
-## 🙏 Acknowledgments
+# Copiar .env
+cp .env.example .env
 
-VISIONFLOW builds upon the work of many open-source projects:
-- OpenCV - Computer vision
-- Three.js - WebGL rendering
-- Color.js - Color science
-- The Academy (ACES) - Color management standards
-- And many more (see [REFERENCE_REPOSITORIES.md](./REFERENCE_REPOSITORIES.md))
+# Iniciar em modo desenvolvimento (com hot reload)
+docker compose up
 
----
+# Em outro terminal, acessar container para executar comandos
+docker compose exec backend bash
+docker compose exec frontend sh
+```
 
-## 📬 Contact
-
-- **Issues**: [GitHub Issues](https://github.com/GabrielaMoretti/Axis/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/GabrielaMoretti/Axis/discussions)
-
----
-
-## 🌟 Support
-
-If you find this project useful, please consider:
-- ⭐ Starring the repository
-- 🐛 Reporting bugs
-- 💡 Suggesting features
-- 🤝 Contributing code
+Veja [CONTRIBUTING.md](./CONTRIBUTING.md) para instruções completas.
 
 ---
 
-**Built with ❤️ for creators who demand professional quality**
+## 📖 Conceitos Fundamentais
+
+### Edição Não-Destrutiva
+Todos os ajustes são aplicados como modificações paramétricas que podem ser alteradas ou removidas a qualquer momento sem degradar a imagem original.
+
+### Processamento Baseado em Física
+Ao invés de aplicar filtros digitais, VISIONFLOW simula a física da luz, lentes e cor para alcançar resultados naturais e profissionais.
+
+### Sistema de Camadas
+O engine analisa a estrutura da imagem e cria camadas separadas para foreground, background, profundidade, materiais e iluminação — permitindo ajustes precisos e isolados.
+
+### Colorimetria Profissional
+Usa espaços de cor perceptuais (LAB, LCH, OKLCH) e ferramentas padrão da indústria (ΔE2000, LUTs 3D) para garantir representação precisa de cor em diferentes dispositivos.
+
+### Multi-Modal Campaign
+Sistema integrado para criar campanhas multi-plataforma (Instagram, YouTube, Spotify) com templates, safe zones e batch export otimizado por destino.
+
+---
+
+## 🚧 Status do Projeto
+
+- **Fase Atual**: Planejamento e Documentação ✅
+- **Próximo Marco**: Alpha 0.1 - Core Engine (Semana 4)
+- **Versão**: 0.1.0 (Web Prototype)
+
+### Por que Web ao invés de React Native?
+
+Este é um **protótipo Web com Docker** para:
+- ✅ Desenvolvimento mais rápido
+- ✅ Debugging superior (Chrome DevTools)
+- ✅ Deploy simplificado
+- ✅ Iteração rápida de features
+
+**Futura migração**: PWA → Electron Desktop → (opcional) React Native Mobile
+
+Veja justificativa completa em [ARCHITECTURE.md](./docs/ARCHITECTURE.md#decisões-arquiteturais).
+
+---
+
+## 📄 Licença
+
+Este projeto está licenciado sob a MIT License - veja o arquivo [LICENSE](LICENSE) para detalhes.
+
+---
+
+## 🙏 Agradecimentos
+
+VISIONFLOW é construído sobre o trabalho de muitos projetos open-source:
+- **OpenCV** - Visão computacional
+- **Fabric.js** - Canvas manipulation
+- **Next.js** - React framework
+- **FastAPI** - Python web framework
+- **TensorFlow** - Machine learning
+- **Intel MiDaS** - Depth estimation
+- **Real-ESRGAN** - Super-resolution
+- **U²-Net** - Segmentation
+
+---
+
+## 📬 Contato
+
+- **Issues**: [GitHub Issues](https://github.com/GabrielaMoretti/VISIONFLOW/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/GabrielaMoretti/VISIONFLOW/discussions)
+
+---
+
+## 🌟 Suporte ao Projeto
+
+Se você acha este projeto útil, considere:
+- ⭐ Dar uma estrela no repositório
+- 🐛 Reportar bugs
+- 💡 Sugerir features
+- 🤝 Contribuir com código
+- 📖 Melhorar a documentação
+
+---
+
+**Construído com ❤️ para criadores que exigem qualidade profissional**
