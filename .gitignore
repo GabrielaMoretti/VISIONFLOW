@@ -112,3 +112,54 @@ assets/luts/generated/
 # Documentation builds
 docs/_build/
 docs/.doctrees/
+
+# ============================================
+# Docker & Volumes
+# ============================================
+volumes/
+docker-compose.override.yml
+.dockerignore
+
+# ============================================
+# Frontend (Next.js)
+# ============================================
+frontend/.next/
+frontend/out/
+frontend/node_modules/
+frontend/.env.local
+
+# ============================================
+# Backend (Python)
+# ============================================
+backend/__pycache__/
+backend/*.py[cod]
+backend/*$py.class
+backend/.pytest_cache/
+backend/.coverage
+backend/htmlcov/
+backend/.venv/
+backend/venv/
+backend/models/cache/
+backend/uploads/
+backend/exports/
+
+# ============================================
+# AI Models (Downloaded at runtime)
+# ============================================
+*.pt
+*.pth
+*.onnx
+*.pb
+*.h5
+*.tflite
+*.bin
+models/
+backend/models/cache/
+
+# ============================================
+# User Data (Volumes)
+# ============================================
+volumes/uploads/
+volumes/exports/
+volumes/models/
+volumes/presets/
