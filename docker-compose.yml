@@ -1,0 +1,126 @@
+# ============================================
+# VISIONFLOW - Docker Compose Configuration
+# ============================================
+# For detailed documentation, see docs/DOCKER_SETUP.md
+
+version: '3.8'
+
+services:
+  # ============================================
+  # Frontend Service (Next.js)
+  # ============================================
+  frontend:
+    container_name: visionflow-frontend
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        - NODE_ENV=${NODE_ENV:-development}
+    ports:
+      - "${FRONTEND_PORT:-3000}:3000"
+    environment:
+      - NODE_ENV=${NODE_ENV:-development}
+      - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-http://backend:8000}
+    volumes:
+      # Bind mount para hot reload (desenvolvimento)
+      - ./frontend:/app
+      - /app/node_modules  # Anonymous volume para node_modules
+      - /app/.next         # Anonymous volume para cache do Next.js
+    depends_on:
+      - backend
+    networks:
+      - visionflow-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    # Override command for development
+    command: npm run dev
+
+  # ============================================
+  # Backend Service (FastAPI + Python)
+  # ============================================
+  backend:
+    container_name: visionflow-backend
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      args:
+        - PYTHON_ENV=${PYTHON_ENV:-development}
+    ports:
+      - "${BACKEND_PORT:-8000}:8000"
+    environment:
+      - PYTHON_ENV=${PYTHON_ENV:-development}
+      - UPLOAD_MAX_SIZE=${UPLOAD_MAX_SIZE:-52428800}
+      - MODELS_CACHE_DIR=${MODELS_CACHE_DIR:-/app/models}
+      - DOWNLOAD_MODELS_ON_START=${DOWNLOAD_MODELS_ON_START:-true}
+      - CORS_ORIGINS=${CORS_ORIGINS:-http://localhost:3000}
+    volumes:
+      # Bind mount para desenvolvimento
+      - ./backend:/app
+      # Named volumes para persistência
+      - visionflow-uploads:/app/uploads
+      - visionflow-exports:/app/exports
+      - visionflow-models:/app/models
+      - visionflow-presets:/app/presets
+    networks:
+      - visionflow-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    # Opcional: GPU support (requer NVIDIA Docker Toolkit)
+    # Descomentar as linhas abaixo se tiver GPU NVIDIA
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           count: 1
+    #           capabilities: [gpu]
+
+# ============================================
+# Networks
+# ============================================
+networks:
+  visionflow-network:
+    driver: bridge
+    name: visionflow-net
+
+# ============================================
+# Volumes
+# ============================================
+volumes:
+  visionflow-uploads:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ${VOLUMES_PATH:-./volumes}/uploads
+  
+  visionflow-exports:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ${VOLUMES_PATH:-./volumes}/exports
+  
+  visionflow-models:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ${VOLUMES_PATH:-./volumes}/models
+  
+  visionflow-presets:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ${VOLUMES_PATH:-./volumes}/presets
