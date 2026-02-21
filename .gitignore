@@ -45,6 +45,9 @@ Thumbs.db
 *.tmp
 .eslintcache
 .stylelintcache
+__pycache__/
+*.pyc
+*.pyo
 
 # Testing
 coverage/
