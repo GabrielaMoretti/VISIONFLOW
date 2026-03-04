@@ -163,3 +163,10 @@ volumes/uploads/
 volumes/exports/
 volumes/models/
 volumes/presets/
+
+# ============================================
+# Project-specific exclusions
+# ============================================
+VISIONFLOW/
+*.crdownload
+venv_d/
