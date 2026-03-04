@@ -1,19 +1,35 @@
 /**
- * Mood Mapping System
- * Translates natural language descriptions of mood/vibe into visual filter adjustments
- * Used for music video color grading
+ * Mood Mapping System — Cinematographic Edition
+ *
+ * Philosophy: Less is more. Professional colorists raramente passam de 20-30%
+ * do range de um parâmetro. O objetivo é direção, não saturação.
+ *
+ * Ranges calibrados (escala cinematográfica):
+ *   hslHueDelta      — rotação relativa de matiz (-30 a +30)
+ *   hslSaturation    — delta de saturação (-25 a +25)
+ *   hslLightness     — delta de luminosidade (-15 a +15)
+ *   vignetteAmount   — força da vinheta (0 a 40)
+ *   sharpenAmount    — nitidez delta (-20 a +40)
+ *   splitHighlightHue — matiz do cast nas altas-luzes (0 a 360, absoluto)
+ *   splitHighlightSat — intensidade do cast nas altas-luzes (0 a 30)
+ *   splitShadowHue   — matiz do cast nas sombras (0 a 360, absoluto)
+ *   splitShadowSat   — intensidade do cast nas sombras (0 a 35)
+ *   contrastDelta    — delta de contraste (-15 a +20)
+ *   temperatureDelta — shift de balanço de branco, quente/frio (-20 a +20)
  */
 
 export interface MoodAdjustment {
-  hslHue?: number; // -180 to 180
-  hslSaturation?: number; // -100 to 100
-  hslLightness?: number; // -50 to 50
-  vignetteAmount?: number; // 0 to 100
-  sharpenAmount?: number; // 0 to 150
-  splitHighlightHue?: number; // 0 to 360
-  splitHighlightSat?: number; // 0 to 100
-  splitShadowHue?: number; // 0 to 360
-  splitShadowSat?: number; // 0 to 100
+  hslHueDelta?: number;       // rotação relativa de matiz (-30 a +30)
+  hslSaturation?: number;     // delta de saturação (-25 a +25)
+  hslLightness?: number;      // delta de luminosidade (-15 a +15)
+  vignetteAmount?: number;    // 0 a 40
+  sharpenAmount?: number;     // -20 a +40
+  splitHighlightHue?: number; // 0 a 360 (matiz absoluto do color cast)
+  splitHighlightSat?: number; // 0 a 30
+  splitShadowHue?: number;    // 0 a 360 (matiz absoluto do color cast)
+  splitShadowSat?: number;    // 0 a 35
+  contrastDelta?: number;     // -15 a +20
+  temperatureDelta?: number;  // shift quente/frio (-20 a +20)
 }
 
 export interface MoodKeyword {
@@ -21,243 +37,330 @@ export interface MoodKeyword {
   keywords: string[];
   adjustments: MoodAdjustment;
   category: 'emotional' | 'environment' | 'time' | 'color' | 'genre' | 'texture';
+  /** Multiplicador de peso ao fazer blend (1.0 = normal) */
+  dominance: number;
 }
 
+/**
+ * MOOD_LIBRARY — Calibrado para output cinematográfico/editorial.
+ *
+ * Cada mood usa no máximo 3-4 ajustes principais.
+ * Split toning (highlight/shadow hues) é a ferramenta primária —
+ * é o que separa "fílmico" de "filtrado".
+ */
 export const MOOD_LIBRARY: MoodKeyword[] = [
   {
     name: 'melancólico',
-    keywords: ['melancólico', 'triste', 'saudade', 'nostalgia', 'blue', 'downtempo'],
+    keywords: ['melancólico', 'triste', 'saudade', 'nostalgia', 'blue', 'downtempo', 'sad', 'melancholy'],
     adjustments: {
-      hslHue: 210,
-      hslSaturation: 30,
-      hslLightness: -10,
-      vignetteAmount: 40,
-      sharpenAmount: 20,
-      splitShadowHue: 200,
-      splitShadowSat: 40,
+      temperatureDelta: -8,
+      hslSaturation: -8,
+      hslLightness: -5,
+      splitShadowHue: 215,
+      splitShadowSat: 18,
+      splitHighlightHue: 210,
+      splitHighlightSat: 8,
+      vignetteAmount: 22,
+      contrastDelta: 5,
     },
     category: 'emotional',
+    dominance: 1.0,
   },
   {
     name: 'lo-fi',
-    keywords: ['lo-fi', 'vintage', 'retro', 'grainy', 'warm', 'nostálgico'],
+    keywords: ['lo-fi', 'lofi', 'vintage', 'retro', 'grainy', 'nostálgico', 'analog'],
     adjustments: {
-      hslHue: 25,
-      hslSaturation: -20,
-      hslLightness: 5,
-      vignetteAmount: 60,
-      sharpenAmount: -30,
-      splitHighlightHue: 45,
-      splitHighlightSat: 20,
+      temperatureDelta: 10,
+      hslSaturation: -12,
+      hslLightness: 4,
+      splitHighlightHue: 42,
+      splitHighlightSat: 14,
+      splitShadowHue: 30,
+      splitShadowSat: 10,
+      vignetteAmount: 28,
+      sharpenAmount: -10,
+      contrastDelta: -8,
     },
     category: 'genre',
+    dominance: 1.0,
   },
   {
     name: 'synthwave',
-    keywords: ['synthwave', 'neon', 'cyberpunk', 'pink', 'purple', 'retro-future'],
+    keywords: ['synthwave', 'neon', 'cyberpunk', 'pink', 'purple', 'retro-future', 'vaporwave'],
     adjustments: {
-      hslHue: 290,
-      hslSaturation: 80,
-      hslLightness: 0,
-      vignetteAmount: 50,
-      sharpenAmount: 40,
-      splitHighlightHue: 290,
-      splitHighlightSat: 100,
+      temperatureDelta: -5,
+      hslSaturation: 18,
+      splitHighlightHue: 300,
+      splitHighlightSat: 22,
       splitShadowHue: 200,
-      splitShadowSat: 80,
+      splitShadowSat: 28,
+      vignetteAmount: 30,
+      contrastDelta: 12,
+      sharpenAmount: 15,
     },
     category: 'genre',
+    dominance: 1.1,
   },
   {
-    name: 'trap',
-    keywords: ['trap', 'dark', 'bass', 'heavy', 'aggressive', 'street'],
+    name: 'dark',
+    keywords: ['trap', 'dark', 'bass', 'heavy', 'aggressive', 'street', 'underground'],
     adjustments: {
-      hslHue: 0,
-      hslSaturation: -40,
-      hslLightness: -20,
-      vignetteAmount: 80,
-      sharpenAmount: 60,
+      hslSaturation: -15,
+      hslLightness: -8,
       splitShadowHue: 0,
-      splitShadowSat: 50,
+      splitShadowSat: 15,
+      vignetteAmount: 35,
+      sharpenAmount: 20,
+      contrastDelta: 18,
+      temperatureDelta: -5,
     },
     category: 'genre',
+    dominance: 1.0,
   },
   {
     name: 'indie',
-    keywords: ['indie', 'alternative', 'organic', 'natural', 'real', 'authentic'],
+    keywords: ['indie', 'alternative', 'organic', 'natural', 'real', 'authentic', 'folk'],
     adjustments: {
-      hslHue: -5,
-      hslSaturation: 10,
-      hslLightness: 2,
-      vignetteAmount: 30,
-      sharpenAmount: 30,
-      splitHighlightHue: 30,
-      splitHighlightSat: 15,
+      temperatureDelta: 5,
+      hslSaturation: 5,
+      splitHighlightHue: 35,
+      splitHighlightSat: 10,
+      vignetteAmount: 15,
+      sharpenAmount: 8,
+      contrastDelta: 3,
     },
     category: 'genre',
+    dominance: 0.8,
   },
   {
     name: 'energético',
-    keywords: ['energético', 'vibrante', 'vivo', 'ecstático', 'euphoric', 'festa'],
+    keywords: ['energético', 'vibrante', 'vivo', 'ecstático', 'euphoric', 'festa', 'energy', 'pop'],
     adjustments: {
-      hslHue: 60,
-      hslSaturation: 60,
-      hslLightness: 10,
-      vignetteAmount: 20,
-      sharpenAmount: 70,
-      splitHighlightHue: 60,
-      splitHighlightSat: 80,
+      hslSaturation: 15,
+      hslLightness: 5,
+      vignetteAmount: 8,
+      sharpenAmount: 20,
+      contrastDelta: 10,
+      temperatureDelta: 8,
     },
     category: 'emotional',
+    dominance: 0.9,
   },
   {
     name: 'calmante',
-    keywords: ['calmante', 'relaxante', 'paz', 'serenidade', 'suave', 'drift'],
+    keywords: ['calmante', 'relaxante', 'paz', 'serenidade', 'suave', 'drift', 'calm', 'peaceful', 'ambient'],
     adjustments: {
-      hslHue: 180,
-      hslSaturation: 20,
-      hslLightness: 8,
-      vignetteAmount: 25,
-      sharpenAmount: 10,
-      splitHighlightHue: 180,
-      splitHighlightSat: 15,
+      temperatureDelta: -4,
+      hslSaturation: -5,
+      hslLightness: 4,
+      splitHighlightHue: 185,
+      splitHighlightSat: 10,
+      vignetteAmount: 12,
+      sharpenAmount: -5,
+      contrastDelta: -5,
     },
     category: 'emotional',
+    dominance: 0.8,
   },
   {
     name: 'noturno',
-    keywords: ['noturno', 'night', 'escuro', 'dark', 'midnight', 'noir'],
+    keywords: ['noturno', 'night', 'escuro', 'midnight', 'noir', 'nocturne'],
     adjustments: {
-      hslHue: 240,
-      hslSaturation: -30,
-      hslLightness: -30,
-      vignetteAmount: 90,
-      sharpenAmount: 35,
-      splitShadowHue: 240,
-      splitShadowSat: 40,
+      temperatureDelta: -12,
+      hslSaturation: -10,
+      hslLightness: -10,
+      splitShadowHue: 225,
+      splitShadowSat: 22,
+      splitHighlightHue: 210,
+      splitHighlightSat: 10,
+      vignetteAmount: 38,
+      contrastDelta: 15,
     },
     category: 'time',
+    dominance: 1.0,
   },
   {
     name: 'cinematic',
-    keywords: ['cinematic', 'film', 'movie', 'blockbuster', 'epic', 'drama'],
+    keywords: ['cinematic', 'film', 'movie', 'blockbuster', 'epic', 'drama', 'cinemático'],
     adjustments: {
-      hslHue: 210,
-      hslSaturation: -10,
-      hslLightness: -5,
-      vignetteAmount: 65,
-      sharpenAmount: 45,
-      splitShadowHue: 200,
-      splitShadowSat: 30,
+      temperatureDelta: -6,
+      hslSaturation: -8,
+      hslLightness: -3,
+      splitShadowHue: 210,
+      splitShadowSat: 20,
+      splitHighlightHue: 35,
+      splitHighlightSat: 12,  // teal-orange — o look clássico de filme
+      vignetteAmount: 28,
+      contrastDelta: 10,
+      sharpenAmount: 12,
     },
     category: 'genre',
+    dominance: 1.0,
   },
   {
     name: 'ethereal',
-    keywords: ['ethereal', 'dreamlike', 'surreal', 'dream', 'magic', 'celestial'],
+    keywords: ['ethereal', 'dreamlike', 'surreal', 'dream', 'magic', 'celestial', 'etéreo', 'dream pop'],
     adjustments: {
-      hslHue: 270,
-      hslSaturation: 25,
-      hslLightness: 15,
-      vignetteAmount: 40,
-      sharpenAmount: 5,
+      temperatureDelta: -3,
+      hslSaturation: 8,
+      hslLightness: 8,
       splitHighlightHue: 270,
-      splitHighlightSat: 35,
+      splitHighlightSat: 15,
+      vignetteAmount: 20,
+      sharpenAmount: -8,
+      contrastDelta: -5,
     },
     category: 'emotional',
+    dominance: 0.9,
   },
   {
     name: 'gritty',
-    keywords: ['gritty', 'raw', 'harsh', 'industrial', 'rough', 'broken'],
+    keywords: ['gritty', 'raw', 'harsh', 'industrial', 'rough', 'broken', 'punk'],
     adjustments: {
-      hslHue: 0,
-      hslSaturation: -50,
-      hslLightness: -10,
-      vignetteAmount: 70,
-      sharpenAmount: 90,
-      splitShadowHue: 0,
-      splitShadowSat: 40,
+      hslSaturation: -20,
+      hslLightness: -6,
+      vignetteAmount: 32,
+      sharpenAmount: 30,
+      contrastDelta: 20,
+      splitShadowHue: 15,
+      splitShadowSat: 12,
     },
     category: 'texture',
+    dominance: 1.0,
   },
   {
     name: 'luxurious',
-    keywords: ['luxury', 'luxuriant', 'premium', 'rich', 'gold', 'glamour'],
+    keywords: ['luxury', 'luxuriant', 'premium', 'rich', 'gold', 'glamour', 'luxuoso'],
     adjustments: {
-      hslHue: 35,
-      hslSaturation: 40,
-      hslLightness: 8,
-      vignetteAmount: 35,
-      sharpenAmount: 50,
-      splitHighlightHue: 40,
-      splitHighlightSat: 50,
+      temperatureDelta: 12,
+      hslSaturation: 10,
+      hslLightness: 3,
+      splitHighlightHue: 38,
+      splitHighlightSat: 20,
+      vignetteAmount: 20,
+      sharpenAmount: 18,
+      contrastDelta: 8,
     },
     category: 'color',
+    dominance: 1.0,
   },
   {
     name: 'desert',
-    keywords: ['desert', 'sandy', 'arid', 'hot', 'warm', 'dust'],
+    keywords: ['desert', 'sandy', 'arid', 'hot', 'dust', 'deserto', 'árido'],
     adjustments: {
-      hslHue: 30,
-      hslSaturation: 30,
-      hslLightness: 15,
-      vignetteAmount: 55,
-      sharpenAmount: 30,
-      splitHighlightHue: 30,
-      splitHighlightSat: 25,
+      temperatureDelta: 15,
+      hslSaturation: 8,
+      hslLightness: 5,
+      splitHighlightHue: 38,
+      splitHighlightSat: 18,
+      splitShadowHue: 25,
+      splitShadowSat: 12,
+      vignetteAmount: 25,
+      contrastDelta: 8,
     },
     category: 'environment',
+    dominance: 0.9,
   },
   {
     name: 'forest',
-    keywords: ['forest', 'nature', 'green', 'organic', 'growth', 'natural'],
+    keywords: ['forest', 'nature', 'green', 'growth', 'natural', 'floresta', 'mata'],
     adjustments: {
-      hslHue: 120,
-      hslSaturation: 35,
-      hslLightness: -5,
-      vignetteAmount: 45,
-      sharpenAmount: 25,
-      splitHighlightHue: 120,
-      splitHighlightSat: 30,
+      temperatureDelta: -3,
+      hslSaturation: 10,
+      hslLightness: -3,
+      splitHighlightHue: 95,
+      splitHighlightSat: 14,
+      splitShadowHue: 140,
+      splitShadowSat: 16,
+      vignetteAmount: 18,
+      contrastDelta: 6,
     },
     category: 'environment',
+    dominance: 0.9,
   },
   {
     name: 'underwater',
-    keywords: ['underwater', 'aquatic', 'deep', 'blue', 'submerged', 'liquid'],
+    keywords: ['underwater', 'aquatic', 'deep', 'submerged', 'liquid', 'subaquático'],
     adjustments: {
-      hslHue: 200,
-      hslSaturation: 50,
-      hslLightness: -15,
-      vignetteAmount: 50,
-      sharpenAmount: 15,
-      splitHighlightHue: 200,
-      splitHighlightSat: 40,
+      temperatureDelta: -15,
+      hslSaturation: 15,
+      hslLightness: -5,
+      splitHighlightHue: 190,
+      splitHighlightSat: 20,
+      splitShadowHue: 210,
+      splitShadowSat: 25,
+      vignetteAmount: 30,
+      sharpenAmount: -5,
+      contrastDelta: 5,
     },
     category: 'environment',
+    dominance: 1.0,
   },
   {
     name: 'sunset',
-    keywords: ['sunset', 'sunrise', 'golden', 'orange', 'warm', 'dusk'],
+    keywords: ['sunset', 'sunrise', 'golden', 'orange', 'dusk', 'pôr do sol', 'golden hour'],
     adjustments: {
-      hslHue: 25,
-      hslSaturation: 60,
-      hslLightness: 5,
-      vignetteAmount: 40,
-      sharpenAmount: 35,
-      splitHighlightHue: 25,
-      splitHighlightSat: 70,
+      temperatureDelta: 18,
+      hslSaturation: 12,
+      hslLightness: 3,
+      splitHighlightHue: 28,
+      splitHighlightSat: 22,
+      splitShadowHue: 350,
+      splitShadowSat: 14,
+      vignetteAmount: 20,
+      contrastDelta: 8,
     },
     category: 'time',
+    dominance: 1.0,
+  },
+  {
+    name: 'black & white',
+    keywords: ['black and white', 'b&w', 'preto e branco', 'monochrome', 'monochromatic', 'monocromático'],
+    adjustments: {
+      hslSaturation: -80,
+      contrastDelta: 15,
+      vignetteAmount: 25,
+      sharpenAmount: 15,
+    },
+    category: 'color',
+    dominance: 1.2,
+  },
+  {
+    name: 'pastel',
+    keywords: ['pastel', 'soft', 'delicate', 'light', 'airy', 'delicado'],
+    adjustments: {
+      hslSaturation: -15,
+      hslLightness: 10,
+      contrastDelta: -10,
+      vignetteAmount: 8,
+      sharpenAmount: -5,
+      temperatureDelta: 5,
+    },
+    category: 'color',
+    dominance: 0.8,
   },
 ];
 
-export function analyzeTextMood(text: string): { moods: string[], adjustments: MoodAdjustment, confidence: number } {
+// ---------------------------------------------------------------------------
+// Função principal de análise
+// ---------------------------------------------------------------------------
+
+/**
+ * Analisa uma descrição de texto e retorna ajustes mood-driven.
+ *
+ * @param text — descrição em linguagem natural do mood, vibe ou gênero
+ * @param intensity — multiplicador global de intensidade (0.0 a 1.0, padrão 0.65)
+ *   Use 0.4–0.6 para looks sutis, editoriais.
+ *   Use 0.7–0.9 para music video / direção de arte mais marcante.
+ */
+export function analyzeTextMood(
+  text: string,
+  intensity: number = 0.65
+): { moods: string[]; adjustments: MoodAdjustment; confidence: number } {
   const lowerText = text.toLowerCase();
-  
-  // Find matching moods
+
   const matches: { keyword: MoodKeyword; matchCount: number }[] = [];
-  
+
   MOOD_LIBRARY.forEach(mood => {
     const count = mood.keywords.filter(kw => lowerText.includes(kw)).length;
     if (count > 0) {
@@ -265,29 +368,28 @@ export function analyzeTextMood(text: string): { moods: string[], adjustments: M
     }
   });
 
-  // Sort by match count
   matches.sort((a, b) => b.matchCount - a.matchCount);
 
-  // Get top 3 moods
-  const topMoods = matches.slice(0, 3);
+  // Máximo 2 moods — mais que isso dilui o caráter
+  const topMoods = matches.slice(0, 2);
   const moodNames = topMoods.map(m => m.keyword.name);
 
-  // Blend adjustments from matched moods
-  const blendedAdjustments = blendAdjustments(
+  const blended = blendAdjustments(
     topMoods.map(m => m.keyword.adjustments),
-    topMoods.map(m => m.matchCount)
+    topMoods.map(m => m.matchCount * m.keyword.dominance)
   );
 
-  const confidence = Math.min(100, topMoods.reduce((sum, m) => sum + m.matchCount * 20, 0));
+  const scaled = scaleAdjustments(blended, clamp01(intensity));
+  const confidence = Math.min(100, topMoods.reduce((sum, m) => sum + m.matchCount * 25, 0));
 
   return {
     moods: moodNames.length > 0 ? moodNames : ['neutral'],
-    adjustments: blendedAdjustments,
-    confidence: Math.min(100, confidence),
+    adjustments: scaled,
+    confidence,
   };
 }
 
-export function getMoodsByCategory(category: 'emotional' | 'environment' | 'time' | 'color' | 'genre' | 'texture'): MoodKeyword[] {
+export function getMoodsByCategory(category: MoodKeyword['category']): MoodKeyword[] {
   return MOOD_LIBRARY.filter(mood => mood.category === category);
 }
 
@@ -308,31 +410,63 @@ export function getSuggestedKeywords(partial: string): string[] {
   return suggestions.slice(0, 8);
 }
 
+// ---------------------------------------------------------------------------
+// Helpers internos
+// ---------------------------------------------------------------------------
+
+/**
+ * Blenda MoodAdjustments usando média ponderada.
+ * Só mistura chaves presentes no mood PRIMÁRIO — o secundário apenas nuança.
+ */
 function blendAdjustments(adjustments: MoodAdjustment[], weights: number[]): MoodAdjustment {
   const totalWeight = weights.reduce((a, b) => a + b, 0);
-  
-  if (totalWeight === 0) return {};
+  if (totalWeight === 0 || adjustments.length === 0) return {};
 
   const result: MoodAdjustment = {};
+  const primaryKeys = Object.keys(adjustments[0] ?? {}) as (keyof MoodAdjustment)[];
+  const keys = new Set<keyof MoodAdjustment>(primaryKeys);
 
-  const keys = new Set<keyof MoodAdjustment>();
-  adjustments.forEach(adj => Object.keys(adj).forEach(k => keys.add(k as keyof MoodAdjustment)));
+  // Secundários só contribuem em chaves que existem no primário
+  adjustments.slice(1).forEach(adj => {
+    (Object.keys(adj) as (keyof MoodAdjustment)[]).forEach(k => {
+      if (primaryKeys.includes(k)) keys.add(k);
+    });
+  });
 
   keys.forEach(key => {
     let sum = 0;
-    let count = 0;
-    
+    let usedWeight = 0;
+
     adjustments.forEach((adj, i) => {
       if (adj[key] !== undefined) {
-        sum += adj[key]! * weights[i];
-        count++;
+        sum += (adj[key] as number) * weights[i];
+        usedWeight += weights[i];
       }
     });
 
-    if (count > 0) {
-      result[key] = Math.round(sum / totalWeight);
+    if (usedWeight > 0) {
+      result[key] = Math.round(sum / usedWeight) as any;
     }
   });
 
   return result;
+}
+
+/**
+ * Escala todos os valores numéricos por um fator 0–1.
+ * Mantém as proporções entre parâmetros intactas.
+ */
+function scaleAdjustments(adj: MoodAdjustment, factor: number): MoodAdjustment {
+  const result: MoodAdjustment = {};
+  (Object.keys(adj) as (keyof MoodAdjustment)[]).forEach(key => {
+    const val = adj[key];
+    if (typeof val === 'number') {
+      result[key] = Math.round(val * factor) as any;
+    }
+  });
+  return result;
+}
+
+function clamp01(v: number): number {
+  return Math.max(0, Math.min(1, v));
 }
