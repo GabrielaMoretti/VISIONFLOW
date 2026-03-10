@@ -133,12 +133,20 @@ function applySplitToning(
   }
 }
 
-function applySaturation(data: Uint8ClampedArray, satDelta: number, vibrance: number): void {
+function applySaturation(
+  data: Uint8ClampedArray,
+  satDelta: number,
+  vibrance: number,
+  hueDelta: number,
+  lightnessDelta: number
+): void {
   for (let i = 0; i < data.length; i += 4) {
     const [h, s, l] = rgbToHsl(data[i], data[i + 1], data[i + 2]);
     const vibranceMult = vibrance > 0 ? (1 - s / 100) * (vibrance / 100) : 0;
     const newS = Math.max(0, Math.min(100, s + satDelta + vibranceMult * 30));
-    const [nr, ng, nb] = hslToRgb(h, newS, l);
+    const newH = ((h + hueDelta) % 360 + 360) % 360;
+    const newL = Math.max(0, Math.min(100, l + lightnessDelta));
+    const [nr, ng, nb] = hslToRgb(newH, newS, newL);
     data[i] = nr;
     data[i + 1] = ng;
     data[i + 2] = nb;
@@ -150,18 +158,65 @@ function applyCurves(
   masterGamma: number,
   redGain: number,
   greenGain: number,
-  blueGain: number
+  blueGain: number,
+  contrastDelta: number
 ): void {
   const gamma = Math.max(0.2, masterGamma);
   const lut = new Uint8Array(256);
+  const contrastFactor = 1 + contrastDelta / 100;
   for (let i = 0; i < 256; i++) {
-    lut[i] = clamp255(Math.round(Math.pow(i / 255, 1 / gamma) * 255));
+    const gammaMapped = Math.pow(i / 255, 1 / gamma) * 255;
+    lut[i] = clamp255(Math.round((gammaMapped - 128) * contrastFactor + 128));
   }
 
   for (let i = 0; i < data.length; i += 4) {
     data[i] = clamp255(lut[data[i]] * redGain);
     data[i + 1] = clamp255(lut[data[i + 1]] * greenGain);
     data[i + 2] = clamp255(lut[data[i + 2]] * blueGain);
+  }
+}
+
+function applyVhs(
+  data: Uint8ClampedArray,
+  width: number,
+  height: number,
+  distortion: number,
+  chromaBleed: number,
+  scanLines: number
+): void {
+  if (distortion <= 0 && chromaBleed <= 0 && scanLines <= 0) return;
+
+  const source = new Uint8ClampedArray(data);
+  const maxShift = Math.max(0, Math.round(distortion * 10));
+  const chromaPx = Math.max(0, Math.round(chromaBleed * 4));
+  const scanStrength = Math.max(0, Math.min(1, scanLines));
+
+  for (let y = 0; y < height; y++) {
+    const waveShift = maxShift > 0
+      ? Math.round(Math.sin((y / Math.max(1, height)) * Math.PI * 10) * maxShift)
+      : 0;
+
+    for (let x = 0; x < width; x++) {
+      const srcX = Math.max(0, Math.min(width - 1, x + waveShift));
+      const baseIdx = (y * width + x) * 4;
+      const srcIdx = (y * width + srcX) * 4;
+
+      const rX = Math.max(0, Math.min(width - 1, srcX + chromaPx));
+      const bX = Math.max(0, Math.min(width - 1, srcX - chromaPx));
+      const rIdx = (y * width + rX) * 4;
+      const bIdx = (y * width + bX) * 4;
+
+      data[baseIdx] = source[rIdx];
+      data[baseIdx + 1] = source[srcIdx + 1];
+      data[baseIdx + 2] = source[bIdx + 2];
+
+      if (scanStrength > 0) {
+        const lineDarken = y % 2 === 0 ? 1 - scanStrength * 0.2 : 1;
+        data[baseIdx] = clamp255(data[baseIdx] * lineDarken);
+        data[baseIdx + 1] = clamp255(data[baseIdx + 1] * lineDarken);
+        data[baseIdx + 2] = clamp255(data[baseIdx + 2] * lineDarken);
+      }
+    }
   }
 }
 
@@ -314,7 +369,8 @@ export async function executePipeline(
           num(p.masterGamma, 1),
           num(p.redGain, 1),
           num(p.greenGain, 1),
-          num(p.blueGain, 1)
+          num(p.blueGain, 1),
+          num(p.contrast, 0)
         );
         break;
       case 'splitToning':
@@ -328,7 +384,13 @@ export async function executePipeline(
         );
         break;
       case 'saturation':
-        applySaturation(data, num(p.saturation, 0), num(p.vibrance, 0));
+        applySaturation(
+          data,
+          num(p.saturation, 0),
+          num(p.vibrance, 0),
+          num(p.hue, 0),
+          num(p.lightness, 0)
+        );
         break;
       case 'vignette':
         applyVignette(data, width, height, num(p.amount, 20), num(p.feather, 0.5));
@@ -338,6 +400,16 @@ export async function executePipeline(
         break;
       case 'grain':
         applyGrain(data, num(p.amount, 15), num(p.roughness, 0.5));
+        break;
+      case 'vhs':
+        applyVhs(
+          data,
+          width,
+          height,
+          num(p.distortion, 0),
+          num(p.chromaBleed, 0),
+          num(p.scanLines, 0)
+        );
         break;
       case 'lens': {
         const profileId = String(p.profileId ?? 'canon-50-14');

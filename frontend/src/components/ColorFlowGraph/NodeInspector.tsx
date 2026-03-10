@@ -21,12 +21,18 @@ const PARAM_CONFIG: Record<string, { label: string; min: number; max: number; st
   balance: { label: 'Balance', min: -100, max: 100, step: 1 },
   saturation: { label: 'Saturation', min: -100, max: 100, step: 1 },
   vibrance: { label: 'Vibrance', min: -50, max: 50, step: 1 },
+  contrast: { label: 'Contrast', min: -40, max: 40, step: 1 },
+  hue: { label: 'Hue', min: -30, max: 30, step: 1 },
+  lightness: { label: 'Lightness', min: -20, max: 20, step: 1 },
   amount: { label: 'Amount', min: 0, max: 100, step: 1 },
   feather: { label: 'Feather', min: 0, max: 1, step: 0.01 },
   size: { label: 'Size', min: 0.5, max: 3, step: 0.1 },
   roughness: { label: 'Roughness', min: 0, max: 1, step: 0.01 },
   intensity: { label: 'Intensity', min: 0, max: 100, step: 1 },
   radius: { label: 'Radius', min: 1, max: 80, step: 1 },
+  distortion: { label: 'Distortion', min: 0, max: 1, step: 0.01 },
+  chromaBleed: { label: 'Chroma Bleed', min: 0, max: 1, step: 0.01 },
+  scanLines: { label: 'Scan Lines', min: 0, max: 1, step: 0.01 },
 };
 
 export function NodeInspector({ node, onUpdate, onClose }: NodeInspectorProps) {

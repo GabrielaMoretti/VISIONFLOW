@@ -31,6 +31,7 @@ import {
 } from '../components/ColorFlowGraph/ColorFlowGraph';
 import { TexturePanel } from '../components/TexturePanel/TexturePanel';
 import { VirtualLensPanel } from '../components/VirtualLensPanel';
+import { CampaignWizard } from '../components/Campaign/CampaignWizard';
 import type { TextureLayer } from '../lib/textures/textureSystem';
 import type { MoodAdjustment } from '../utils/moodMapping';
 import { loadImageAsImageData, exportCanvasAsBlob } from '../lib/colorflow/imageLoader';
@@ -75,6 +76,9 @@ function applyPanelParamsToNodes(nodes: any[], params: ProcessingParams): any[] 
       case 'whiteBalance':
         nextParams.temperature = params.temperature;
         break;
+      case 'curves':
+        nextParams.contrast = params.contrast;
+        break;
       case 'splitToning':
         nextParams.highlightHue = params.splitHighlightHue ?? 40;
         nextParams.highlightSat = params.splitHighlightSat ?? 15;
@@ -83,6 +87,8 @@ function applyPanelParamsToNodes(nodes: any[], params: ProcessingParams): any[] 
         break;
       case 'saturation':
         nextParams.saturation = params.saturation;
+        nextParams.hue = params.hue;
+        nextParams.lightness = params.lightness;
         break;
       case 'vignette':
         nextParams.amount = params.vignette;
@@ -159,8 +165,9 @@ export default function CreationStudioScreen() {
   const [isDragOver, setIsDragOver] = useState(false);
   const [useAI, setUseAI] = useState(true);
   const [modelTag, setModelTag] = useState<'semantic-ai' | 'keyword-fallback' | 'keyword'>('keyword');
-  const [activeTab, setActiveTab] = useState<'editor' | 'flow' | 'textures'>('editor');
+  const [activeTab, setActiveTab] = useState<'editor' | 'flow' | 'textures' | 'campaign'>('editor');
   const [lastTexture, setLastTexture] = useState<TextureLayer | null>(null);
+  const [textureStack, setTextureStack] = useState<TextureLayer[]>([]);
   const [isFlowDrawerOpen, setIsFlowDrawerOpen] = useState(true);
   const [isFlowDrawerExpanded, setIsFlowDrawerExpanded] = useState(false);
   const [originalImageData, setOriginalImageData] = useState<ImageData | null>(null);
@@ -322,22 +329,65 @@ export default function CreationStudioScreen() {
     });
   }, [setNodes]);
 
+  const handleTextureStackChange = useCallback((layers: TextureLayer[]) => {
+    setTextureStack(layers);
+    setLastTexture(layers.length ? layers[layers.length - 1] : null);
+
+    const lastFilmGrain = [...layers].reverse().find((l) => l.category === 'film_grain');
+    const lastHalation = [...layers].reverse().find((l) => l.category === 'halation');
+    const lastVhs = [...layers].reverse().find((l) => l.category === 'vhs');
+
+    const grainAmount = lastFilmGrain ? Number(lastFilmGrain.params.amount ?? 15) : 0;
+    const grainRoughness = lastFilmGrain ? Number(lastFilmGrain.params.roughness ?? 0.5) : 0.5;
+
+    const halationIntensity = lastHalation ? Number(lastHalation.params.intensity ?? 20) : 0;
+
+    const vhsDistortion = lastVhs ? Number(lastVhs.params.distortion ?? 0.3) : 0;
+    const vhsChromaBleed = lastVhs ? Number(lastVhs.params.chromaBleed ?? 0.4) : 0;
+    const vhsScanLines = lastVhs ? Number(lastVhs.params.scanLines ?? 0.5) : 0;
+
+    setParams((prev) => ({
+      ...prev,
+      sharpen: lastFilmGrain ? Math.min(40, Math.round(grainAmount * 0.5)) : DEFAULT_PARAMS.sharpen,
+      lightness: lastHalation ? Math.min(15, Math.round(halationIntensity / 12)) : DEFAULT_PARAMS.lightness,
+    }));
+
+    setNodes((prev: any[]) => prev.map((n) => {
+      const d = n.data ?? {};
+      if (d.nodeType === 'grain') {
+        return {
+          ...n,
+          data: {
+            ...d,
+            params: {
+              ...(d.params ?? {}),
+              amount: grainAmount,
+              roughness: grainRoughness,
+            },
+          },
+        };
+      }
+      if (d.nodeType === 'vhs') {
+        return {
+          ...n,
+          data: {
+            ...d,
+            params: {
+              ...(d.params ?? {}),
+              distortion: vhsDistortion,
+              chromaBleed: vhsChromaBleed,
+              scanLines: vhsScanLines,
+            },
+          },
+        };
+      }
+      return n;
+    }));
+  }, [setNodes]);
+
   const handleApplyTexture = useCallback((layer: TextureLayer) => {
     setLastTexture(layer);
-    if (layer.category === 'film_grain') {
-      const amount = Number(layer.params.amount ?? 20);
-      setParams((prev) => ({ ...prev, sharpen: Math.min(40, Math.round(amount * 0.5)) }));
-      setNodes((prev: any[]) => prev.map((n) => {
-        const d = n.data ?? {};
-        if (d.nodeType !== 'grain') return n;
-        return { ...n, data: { ...d, params: { ...(d.params ?? {}), amount, roughness: Number(layer.params.roughness ?? 0.5) } } };
-      }));
-    }
-    if (layer.category === 'halation') {
-      const intensityValue = Number(layer.params.intensity ?? 20);
-      setParams((prev) => ({ ...prev, lightness: Math.min(15, Math.round(intensityValue / 12)) }));
-    }
-  }, [setNodes]);
+  }, []);
 
   const handleAddLensToFlow = useCallback((payload: {
     profileId: string;
@@ -390,6 +440,12 @@ export default function CreationStudioScreen() {
   const handleLensPresetColorGrading = useCallback((adjustment: MoodAdjustment) => {
     setNodes((prev) => applyMoodToNodes(prev, adjustment));
     setParams((prev) => applyMoodAdjustment(prev, adjustment));
+  }, [setNodes]);
+
+  const handleCampaignApplyLook = useCallback((adjustment: MoodAdjustment) => {
+    setNodes((prev) => applyMoodToNodes(prev, adjustment));
+    setParams((prev) => applyMoodAdjustment(prev, adjustment));
+    setActiveTab('editor');
   }, [setNodes]);
 
   // ─── Render ───────────────────────────────────────────────────────────────
@@ -569,7 +625,20 @@ export default function CreationStudioScreen() {
               >
                 Texturas
               </button>
+              <button
+                style={{ ...S.topTabBtn, ...(activeTab === 'campaign' ? S.topTabBtnActive : {}) }}
+                onClick={() => setActiveTab('campaign')}
+              >
+                Campaign
+              </button>
             </div>
+
+            {activeTab === 'campaign' && (
+              <section style={S.section}>
+                <h3 style={S.sectionTitle}>CAMPAIGN ENGINE</h3>
+                <CampaignWizard onApplyLook={handleCampaignApplyLook} />
+              </section>
+            )}
 
             {activeTab === 'flow' && (
               <section style={S.section}>
@@ -591,10 +660,15 @@ export default function CreationStudioScreen() {
             {activeTab === 'textures' && (
               <section style={S.section}>
                 <h3 style={S.sectionTitle}>SISTEMA DE TEXTURAS</h3>
-                <TexturePanel onApply={handleApplyTexture} />
+                <TexturePanel onApply={handleApplyTexture} onStackChange={handleTextureStackChange} />
                 {lastTexture && (
                   <div style={{ marginTop: 10, color: C.textMuted, fontSize: 11 }}>
                     Última textura: {lastTexture.name} ({lastTexture.opacity}%)
+                  </div>
+                )}
+                {!lastTexture && textureStack.length === 0 && (
+                  <div style={{ marginTop: 10, color: C.textMuted, fontSize: 11 }}>
+                    Sem texturas ativas no pipeline.
                   </div>
                 )}
               </section>
@@ -816,7 +890,7 @@ const S: Record<string, React.CSSProperties> = {
   },
   topTabs: {
     display: 'grid',
-    gridTemplateColumns: '1fr 1fr 1fr',
+    gridTemplateColumns: '1fr 1fr 1fr 1fr',
     gap: 8,
     marginBottom: 16,
   },

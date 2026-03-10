@@ -21,21 +21,28 @@ const nodeTypes = { colorNode: ColorNode };
 export const COLOR_FLOW_INITIAL_NODES: any[] = [
   { id: '1', type: 'colorNode', position: { x: 50, y: 150 }, data: { nodeType: 'imageInput', label: 'Imagem', params: {} } },
   { id: '2', type: 'colorNode', position: { x: 250, y: 150 }, data: { nodeType: 'whiteBalance', label: 'White Balance', params: { ...NODE_DEFAULTS.whiteBalance } } },
-  { id: '3', type: 'colorNode', position: { x: 450, y: 100 }, data: { nodeType: 'curves', label: 'Curves', params: { ...NODE_DEFAULTS.curves } } },
-  { id: '4', type: 'colorNode', position: { x: 450, y: 220 }, data: { nodeType: 'splitToning', label: 'Split Toning', params: { ...NODE_DEFAULTS.splitToning } } },
-  { id: '5', type: 'colorNode', position: { x: 650, y: 150 }, data: { nodeType: 'vignette', label: 'Vignette', params: { ...NODE_DEFAULTS.vignette } } },
-  { id: '6', type: 'colorNode', position: { x: 820, y: 150 }, data: { nodeType: 'lens', label: 'Lens', params: { ...NODE_DEFAULTS.lens } } },
-  { id: '7', type: 'colorNode', position: { x: 980, y: 150 }, data: { nodeType: 'output', label: 'Output', params: {} } },
+  { id: '3', type: 'colorNode', position: { x: 450, y: 150 }, data: { nodeType: 'curves', label: 'Curves', params: { ...NODE_DEFAULTS.curves } } },
+  { id: '4', type: 'colorNode', position: { x: 650, y: 150 }, data: { nodeType: 'splitToning', label: 'Split Toning', params: { ...NODE_DEFAULTS.splitToning } } },
+  { id: '5', type: 'colorNode', position: { x: 840, y: 150 }, data: { nodeType: 'saturation', label: 'Saturation', params: { ...NODE_DEFAULTS.saturation } } },
+  { id: '6', type: 'colorNode', position: { x: 1020, y: 150 }, data: { nodeType: 'vignette', label: 'Vignette', params: { ...NODE_DEFAULTS.vignette } } },
+  { id: '7', type: 'colorNode', position: { x: 1200, y: 150 }, data: { nodeType: 'sharpen', label: 'Sharpen', params: { ...NODE_DEFAULTS.sharpen } } },
+  { id: '8', type: 'colorNode', position: { x: 1380, y: 150 }, data: { nodeType: 'grain', label: 'Grain', params: { ...NODE_DEFAULTS.grain } } },
+  { id: '9', type: 'colorNode', position: { x: 1560, y: 150 }, data: { nodeType: 'vhs', label: 'VHS', params: { ...NODE_DEFAULTS.vhs } } },
+  { id: '10', type: 'colorNode', position: { x: 1740, y: 150 }, data: { nodeType: 'lens', label: 'Lens', params: { ...NODE_DEFAULTS.lens } } },
+  { id: '11', type: 'colorNode', position: { x: 1920, y: 150 }, data: { nodeType: 'output', label: 'Output', params: {} } },
 ];
 
 export const COLOR_FLOW_INITIAL_EDGES: Edge[] = [
   { id: 'e1-2', source: '1', target: '2' },
   { id: 'e2-3', source: '2', target: '3' },
-  { id: 'e2-4', source: '2', target: '4' },
-  { id: 'e3-5', source: '3', target: '5' },
+  { id: 'e3-4', source: '3', target: '4' },
   { id: 'e4-5', source: '4', target: '5' },
   { id: 'e5-6', source: '5', target: '6' },
   { id: 'e6-7', source: '6', target: '7' },
+  { id: 'e7-8', source: '7', target: '8' },
+  { id: 'e8-9', source: '8', target: '9' },
+  { id: 'e9-10', source: '9', target: '10' },
+  { id: 'e10-11', source: '10', target: '11' },
 ];
 
 function titleCaseNode(type: NodeType): string {

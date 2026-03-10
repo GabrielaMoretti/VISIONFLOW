@@ -40,9 +40,10 @@ const TEXTURE_PRESETS: TextureLayer[] = [
 
 interface TexturePanelProps {
   onApply: (layer: TextureLayer) => void;
+  onStackChange?: (layers: TextureLayer[]) => void;
 }
 
-export function TexturePanel({ onApply }: TexturePanelProps) {
+export function TexturePanel({ onApply, onStackChange }: TexturePanelProps) {
   const [activeLayers, setActiveLayers] = useState<TextureLayer[]>([]);
   const [selectedPreset, setSelectedPreset] = useState<TextureLayer | null>(null);
 
@@ -51,7 +52,11 @@ export function TexturePanel({ onApply }: TexturePanelProps) {
   const addLayer = () => {
     if (!selectedPreset) return;
     const layer = { ...selectedPreset, id: `layer-${Date.now()}` };
-    setActiveLayers((prev) => [...prev, layer]);
+    setActiveLayers((prev) => {
+      const next = [...prev, layer];
+      onStackChange?.(next);
+      return next;
+    });
     onApply(layer);
   };
 
@@ -127,7 +132,13 @@ export function TexturePanel({ onApply }: TexturePanelProps) {
               <span style={{ color: '#e4e4e7', fontSize: 12, flex: 1 }}>{layer.name}</span>
               <span style={{ color: '#a1a1aa', fontSize: 11 }}>{layer.opacity}%</span>
               <button
-                onClick={() => setActiveLayers((prev) => prev.filter((l) => l.id !== layer.id))}
+                onClick={() => {
+                  setActiveLayers((prev) => {
+                    const next = prev.filter((l) => l.id !== layer.id);
+                    onStackChange?.(next);
+                    return next;
+                  });
+                }}
                 style={{ background: 'none', border: 'none', color: '#a1a1aa', cursor: 'pointer' }}
               >
                 ✕
