@@ -8,6 +8,7 @@
  */
 
 import React, { useState, useRef, useEffect, useCallback } from 'react';
+import { useEdgesState, useNodesState } from '@xyflow/react';
 import {
   processImageData,
   loadImage,
@@ -22,6 +23,19 @@ import {
   type QuickAnalysis,
   type MoodPreset,
 } from '../processing/canvasProcessor';
+import { analyzeTextMoodEnhanced } from '../utils/moodMapping';
+import {
+  ColorFlowGraph,
+  COLOR_FLOW_INITIAL_EDGES,
+  COLOR_FLOW_INITIAL_NODES,
+} from '../components/ColorFlowGraph/ColorFlowGraph';
+import { TexturePanel } from '../components/TexturePanel/TexturePanel';
+import { VirtualLensPanel } from '../components/VirtualLensPanel';
+import type { TextureLayer } from '../lib/textures/textureSystem';
+import type { MoodAdjustment } from '../utils/moodMapping';
+import { loadImageAsImageData, exportCanvasAsBlob } from '../lib/colorflow/imageLoader';
+import { useColorFlowRenderer } from '../hooks/useColorFlowRenderer';
+import { applyMoodToNodes } from '../lib/colorflow/moodToNodes';
 
 // ─── Theme (inlined for zero-dep web component) ─────────────────────────────
 
@@ -35,6 +49,53 @@ const C = {
 } as const;
 
 const PREVIEW_MAX = 800;
+
+function applyMoodAdjustment(base: ProcessingParams, mood: MoodAdjustment): ProcessingParams {
+  return {
+    ...base,
+    temperature: typeof mood.temperatureDelta === 'number' ? mood.temperatureDelta : base.temperature,
+    saturation: typeof mood.hslSaturation === 'number' ? mood.hslSaturation : base.saturation,
+    lightness: typeof mood.hslLightness === 'number' ? mood.hslLightness : base.lightness,
+    contrast: typeof mood.contrastDelta === 'number' ? mood.contrastDelta : base.contrast,
+    vignette: typeof mood.vignetteAmount === 'number' ? mood.vignetteAmount : base.vignette,
+    hue: typeof mood.hslHueDelta === 'number' ? mood.hslHueDelta : base.hue,
+    sharpen: typeof mood.sharpenAmount === 'number' ? mood.sharpenAmount : base.sharpen,
+    splitHighlightHue: mood.splitHighlightHue,
+    splitHighlightSat: mood.splitHighlightSat,
+    splitShadowHue: mood.splitShadowHue,
+    splitShadowSat: mood.splitShadowSat,
+  };
+}
+
+function applyPanelParamsToNodes(nodes: any[], params: ProcessingParams): any[] {
+  return nodes.map((node) => {
+    const data = (node.data ?? {}) as { nodeType?: string; params?: Record<string, unknown> };
+    const nextParams = { ...(data.params ?? {}) };
+    switch (data.nodeType) {
+      case 'whiteBalance':
+        nextParams.temperature = params.temperature;
+        break;
+      case 'splitToning':
+        nextParams.highlightHue = params.splitHighlightHue ?? 40;
+        nextParams.highlightSat = params.splitHighlightSat ?? 15;
+        nextParams.shadowHue = params.splitShadowHue ?? 210;
+        nextParams.shadowSat = params.splitShadowSat ?? 20;
+        break;
+      case 'saturation':
+        nextParams.saturation = params.saturation;
+        break;
+      case 'vignette':
+        nextParams.amount = params.vignette;
+        break;
+      case 'sharpen':
+        nextParams.amount = params.sharpen;
+        break;
+      default:
+        break;
+    }
+    return { ...node, data: { ...data, params: nextParams } };
+  });
+}
 
 // ─── Slider sub-component ───────────────────────────────────────────────────
 
@@ -96,6 +157,20 @@ export default function CreationStudioScreen() {
   const [sliderPos, setSliderPos] = useState(0.5);
   const [isDragging, setIsDragging] = useState(false);
   const [isDragOver, setIsDragOver] = useState(false);
+  const [useAI, setUseAI] = useState(true);
+  const [modelTag, setModelTag] = useState<'semantic-ai' | 'keyword-fallback' | 'keyword'>('keyword');
+  const [activeTab, setActiveTab] = useState<'editor' | 'flow' | 'textures'>('editor');
+  const [lastTexture, setLastTexture] = useState<TextureLayer | null>(null);
+  const [isFlowDrawerOpen, setIsFlowDrawerOpen] = useState(true);
+  const [isFlowDrawerExpanded, setIsFlowDrawerExpanded] = useState(false);
+  const [originalImageData, setOriginalImageData] = useState<ImageData | null>(null);
+  const [nodes, setNodes, onNodesChange] = useNodesState(
+    COLOR_FLOW_INITIAL_NODES.map((n) => ({
+      ...n,
+      data: { ...n.data, params: { ...(n.data?.params ?? {}) } },
+    }))
+  );
+  const [edges, setEdges, onEdgesChange] = useEdgesState([...COLOR_FLOW_INITIAL_EDGES]);
 
   // Refs
   const origImgRef = useRef<HTMLImageElement | null>(null);
@@ -105,20 +180,24 @@ export default function CreationStudioScreen() {
   const containerRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // ─── Process image when params change ─────────────────────────────────────
+  const { renderState, forceRender } = useColorFlowRenderer({
+    canvasRef: procCanvasRef,
+    originalImageData,
+    nodes,
+    edges,
+    debounceMs: 120,
+  });
 
-  const processAndRender = useCallback((data: ImageData, p: ProcessingParams) => {
+  // ─── Render base/original layer ───────────────────────────────────────────
+
+  const drawOriginal = useCallback((data: ImageData) => {
     if (origCanvasRef.current) renderToCanvas(origCanvasRef.current, data);
-    if (procCanvasRef.current) {
-      const processed = processImageData(data, p);
-      renderToCanvas(procCanvasRef.current, processed);
-    }
   }, []);
 
   useEffect(() => {
     if (!origDataRef.current || !hasImage) return;
-    processAndRender(origDataRef.current, params);
-  }, [params, hasImage, processAndRender]);
+    drawOriginal(origDataRef.current);
+  }, [hasImage, drawOriginal]);
 
   // ─── Before/After drag ────────────────────────────────────────────────────
 
@@ -142,8 +221,11 @@ export default function CreationStudioScreen() {
     if (!file.type.startsWith('image/')) return;
     try {
       const img = await loadImage(file);
+      const fullRes = await loadImageAsImageData(file);
       origImgRef.current = img;
       setFileName(file.name);
+      setOriginalImageData(fullRes);
+
       const { imageData } = imageToCanvas(img, PREVIEW_MAX);
       origDataRef.current = imageData;
       setImgDims({ w: imageData.width, h: imageData.height });
@@ -164,11 +246,26 @@ export default function CreationStudioScreen() {
 
   const handleAnalyzeMood = useCallback(() => {
     if (!moodText.trim()) return;
-    const result = matchMoods(moodText, intensity / 100);
-    setActiveMoods(result.moods);
-    setConfidence(result.confidence);
-    setParams(result.params);
-  }, [moodText, intensity]);
+    void (async () => {
+      if (useAI) {
+        const enhanced = await analyzeTextMoodEnhanced(moodText, intensity / 100, true);
+        if ('modelUsed' in enhanced) {
+          setModelTag(enhanced.modelUsed);
+          setActiveMoods([enhanced.topAnchor]);
+          setConfidence(Math.round(enhanced.similarity * 100));
+          setParams((prev) => applyMoodAdjustment(prev, enhanced.adjustments));
+          setNodes((prev: any[]) => applyMoodToNodes(prev, enhanced.adjustments));
+          return;
+        }
+      }
+      const result = matchMoods(moodText, intensity / 100);
+      setModelTag('keyword');
+      setActiveMoods(result.moods);
+      setConfidence(result.confidence);
+      setParams(result.params);
+      setNodes((prev: any[]) => applyPanelParamsToNodes(prev, result.params));
+    })();
+  }, [moodText, intensity, useAI, setNodes]);
 
   const handleMoodPreset = useCallback((name: string) => {
     const preset = MOOD_PRESETS.find(p => p.name === name);
@@ -186,24 +283,114 @@ export default function CreationStudioScreen() {
       if (typeof v === 'number') (scaled as any)[key] = Math.round(v * factor);
     }
     setParams(scaled);
-  }, [intensity]);
+    setNodes((prev: any[]) => applyPanelParamsToNodes(prev, scaled));
+  }, [intensity, setNodes]);
 
   const handleReset = useCallback(() => {
     setParams({ ...DEFAULT_PARAMS });
     setActiveMoods([]); setConfidence(0); setMoodText('');
-  }, []);
+    setNodes(
+      COLOR_FLOW_INITIAL_NODES.map((n) => ({
+        ...n,
+        data: { ...n.data, params: { ...(n.data?.params ?? {}) } },
+      }))
+    );
+    setEdges([...COLOR_FLOW_INITIAL_EDGES]);
+  }, [setNodes, setEdges]);
 
-  const handleExport = useCallback((format: 'png' | 'jpeg') => {
-    if (!origImgRef.current) return;
-    const { canvas, imageData } = imageToCanvas(origImgRef.current, 0);
-    const processed = processImageData(imageData, params);
-    renderToCanvas(canvas, processed);
-    exportCanvas(canvas, format);
-  }, [params]);
+  const handleExport = useCallback(async (format: 'png' | 'jpeg') => {
+    await forceRender();
+    if (!procCanvasRef.current) return;
+    const blob = await exportCanvasAsBlob(
+      procCanvasRef.current,
+      format === 'png' ? 'image/png' : 'image/jpeg',
+      0.95
+    );
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = format === 'png' ? 'visionflow_export.png' : 'visionflow_export.jpg';
+    a.click();
+    URL.revokeObjectURL(url);
+  }, [forceRender]);
 
   const handleParamChange = useCallback((key: keyof ProcessingParams, value: number) => {
-    setParams(prev => ({ ...prev, [key]: value }));
-  }, []);
+    setParams((prev) => {
+      const next = { ...prev, [key]: value };
+      setNodes((nodesPrev: any[]) => applyPanelParamsToNodes(nodesPrev, next));
+      return next;
+    });
+  }, [setNodes]);
+
+  const handleApplyTexture = useCallback((layer: TextureLayer) => {
+    setLastTexture(layer);
+    if (layer.category === 'film_grain') {
+      const amount = Number(layer.params.amount ?? 20);
+      setParams((prev) => ({ ...prev, sharpen: Math.min(40, Math.round(amount * 0.5)) }));
+      setNodes((prev: any[]) => prev.map((n) => {
+        const d = n.data ?? {};
+        if (d.nodeType !== 'grain') return n;
+        return { ...n, data: { ...d, params: { ...(d.params ?? {}), amount, roughness: Number(layer.params.roughness ?? 0.5) } } };
+      }));
+    }
+    if (layer.category === 'halation') {
+      const intensityValue = Number(layer.params.intensity ?? 20);
+      setParams((prev) => ({ ...prev, lightness: Math.min(15, Math.round(intensityValue / 12)) }));
+    }
+  }, [setNodes]);
+
+  const handleAddLensToFlow = useCallback((payload: {
+    profileId: string;
+    aperture: number;
+    distortionEnabled: boolean;
+    chromaticAberrationEnabled: boolean;
+    vignetteEnabled: boolean;
+  }) => {
+    const lensNodeId = `lens-${Date.now()}`;
+    const outputNode = nodes.find((n) => (n.data as any)?.nodeType === 'output');
+    const sourceNode = outputNode
+      ? nodes.find((n) => n.id !== outputNode.id && edges.some((e) => e.target === outputNode.id && e.source === n.id))
+      : undefined;
+
+    setNodes((prev) => [
+      ...prev,
+      {
+        id: lensNodeId,
+        type: 'colorNode',
+        position: {
+          x: (sourceNode?.position?.x ?? 800) + 160,
+          y: sourceNode?.position?.y ?? 150,
+        },
+        data: {
+          nodeType: 'lens',
+          label: 'Lens',
+          params: {
+            profileId: payload.profileId,
+            aperture: payload.aperture,
+            distortionEnabled: payload.distortionEnabled,
+            chromaticAberrationEnabled: payload.chromaticAberrationEnabled,
+            vignetteEnabled: payload.vignetteEnabled,
+          },
+        },
+      },
+    ]);
+
+    if (outputNode && sourceNode) {
+      setEdges((prev) => {
+        const withoutOld = prev.filter((e) => !(e.source === sourceNode.id && e.target === outputNode.id));
+        return [
+          ...withoutOld,
+          { id: `e-${sourceNode.id}-${lensNodeId}`, source: sourceNode.id, target: lensNodeId },
+          { id: `e-${lensNodeId}-${outputNode.id}`, source: lensNodeId, target: outputNode.id },
+        ];
+      });
+    }
+  }, [nodes, edges, setNodes, setEdges]);
+
+  const handleLensPresetColorGrading = useCallback((adjustment: MoodAdjustment) => {
+    setNodes((prev) => applyMoodToNodes(prev, adjustment));
+    setParams((prev) => applyMoodAdjustment(prev, adjustment));
+  }, [setNodes]);
 
   // ─── Render ───────────────────────────────────────────────────────────────
 
@@ -227,6 +414,9 @@ export default function CreationStudioScreen() {
               }}>{m}</span>
             ))}
             <span style={{ color: C.textMuted, fontSize: 11 }}>{confidence}% match</span>
+            <span style={{ color: C.teal, fontSize: 11 }}>
+              {modelTag === 'semantic-ai' ? 'semantic-ai' : modelTag === 'keyword-fallback' ? 'fallback' : 'keyword'}
+            </span>
           </div>
         )}
       </header>
@@ -325,6 +515,27 @@ export default function CreationStudioScreen() {
             </div>
           )}
 
+          {hasImage && (
+            <div style={S.pipelineStatusBar}>
+              {renderState.isRendering ? (
+                <span style={{ color: C.teal }}>⟳ Renderizando...</span>
+              ) : renderState.lastRenderTime ? (
+                <span>
+                  ✓ {renderState.lastRenderTime.toFixed(0)}ms — {renderState.nodesExecuted.join(' → ')}
+                </span>
+              ) : null}
+              {renderState.error && <span style={{ color: C.error }}>⚠ {renderState.error}</span>}
+              <button
+                onClick={() => {
+                  void handleExport('jpeg');
+                }}
+                style={S.pipelineExportBtn}
+              >
+                Exportar
+              </button>
+            </div>
+          )}
+
           {/* New image button */}
           {hasImage && (
             <div style={{ marginTop: 8, textAlign: 'center' }}>
@@ -339,9 +550,74 @@ export default function CreationStudioScreen() {
         <div style={S.rightPanel}>
           <div style={S.scrollArea}>
 
+            <div style={S.topTabs}>
+              <button
+                style={{ ...S.topTabBtn, ...(activeTab === 'editor' ? S.topTabBtnActive : {}) }}
+                onClick={() => setActiveTab('editor')}
+              >
+                Editor
+              </button>
+              <button
+                style={{ ...S.topTabBtn, ...(activeTab === 'flow' ? S.topTabBtnActive : {}) }}
+                onClick={() => setActiveTab('flow')}
+              >
+                Color Flow
+              </button>
+              <button
+                style={{ ...S.topTabBtn, ...(activeTab === 'textures' ? S.topTabBtnActive : {}) }}
+                onClick={() => setActiveTab('textures')}
+              >
+                Texturas
+              </button>
+            </div>
+
+            {activeTab === 'flow' && (
+              <section style={S.section}>
+                <h3 style={S.sectionTitle}>LENS + FLOW (PAINEL GUIA)</h3>
+                <div style={{ marginBottom: 12 }}>
+                  <VirtualLensPanel
+                    onAddToColorFlow={handleAddLensToFlow}
+                    onApplyColorGrading={handleLensPresetColorGrading}
+                  />
+                </div>
+                <div style={S.flowHelpBox}>
+                  <div>💡 Dica para leigos:</div>
+                  <div>Comece com um preset de lente, depois ajuste só 1 ou 2 nós (Saturation e Vignette).</div>
+                  <div>Para conectar nós: arraste do ponto roxo (saída) para o ponto cinza (entrada).</div>
+                </div>
+              </section>
+            )}
+
+            {activeTab === 'textures' && (
+              <section style={S.section}>
+                <h3 style={S.sectionTitle}>SISTEMA DE TEXTURAS</h3>
+                <TexturePanel onApply={handleApplyTexture} />
+                {lastTexture && (
+                  <div style={{ marginTop: 10, color: C.textMuted, fontSize: 11 }}>
+                    Última textura: {lastTexture.name} ({lastTexture.opacity}%)
+                  </div>
+                )}
+              </section>
+            )}
+
+            {activeTab === 'editor' && (
+              <>
+
             {/* ─── Mood System ─── */}
             <section style={S.section}>
               <h3 style={S.sectionTitle}>MOOD SYSTEM</h3>
+
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+                <label style={{ color: C.textSecondary, fontSize: 12, display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <input
+                    type="checkbox"
+                    checked={useAI}
+                    onChange={(e) => setUseAI(e.target.checked)}
+                    style={{ accentColor: C.accent }}
+                  />
+                  Semantic AI (Transformers.js)
+                </label>
+              </div>
 
               {/* Text input */}
               <div style={{ display: 'flex', gap: 8, marginBottom: 14 }}>
@@ -411,9 +687,46 @@ export default function CreationStudioScreen() {
                 </button>
               </div>
             </section>
+              </>
+            )}
           </div>
         </div>
       </div>
+
+      {activeTab === 'flow' && (
+        <div
+          style={{
+            ...S.flowDrawer,
+            height: isFlowDrawerOpen ? (isFlowDrawerExpanded ? 420 : 270) : 46,
+          }}
+        >
+          <div style={S.flowDrawerHeader}>
+            <div style={{ color: C.textSecondary, fontSize: 12, fontWeight: 600 }}>
+              Color Flow Graph {isFlowDrawerOpen ? '(ativo)' : '(minimizado)'}
+            </div>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button style={S.flowDrawerBtn} onClick={() => setIsFlowDrawerExpanded((v) => !v)}>
+                {isFlowDrawerExpanded ? 'Compactar' : 'Expandir'}
+              </button>
+              <button style={S.flowDrawerBtn} onClick={() => setIsFlowDrawerOpen((v) => !v)}>
+                {isFlowDrawerOpen ? 'Minimizar' : 'Abrir'}
+              </button>
+            </div>
+          </div>
+          {isFlowDrawerOpen && (
+            <div style={S.flowDrawerContent}>
+              <ColorFlowGraph
+                nodes={nodes}
+                edges={edges}
+                setNodes={setNodes}
+                setEdges={setEdges}
+                onNodesChange={onNodesChange}
+                onEdgesChange={onEdgesChange}
+              />
+            </div>
+          )}
+        </div>
+      )}
 
       {/* ─── Hidden file input ─── */}
       <input ref={fileInputRef} type="file" accept="image/*"
@@ -501,6 +814,27 @@ const S: Record<string, React.CSSProperties> = {
     flex: 1, overflowY: 'auto' as const,
     padding: 20,
   },
+  topTabs: {
+    display: 'grid',
+    gridTemplateColumns: '1fr 1fr 1fr',
+    gap: 8,
+    marginBottom: 16,
+  },
+  topTabBtn: {
+    border: `1px solid ${C.border}`,
+    background: C.bgElevated,
+    color: C.textSecondary,
+    borderRadius: 8,
+    padding: '8px 10px',
+    fontSize: 12,
+    fontWeight: 600,
+    cursor: 'pointer',
+  },
+  topTabBtnActive: {
+    background: C.accentMuted,
+    color: C.accent,
+    border: `1px solid ${C.accent}`,
+  },
 
   // Sections
   section: {
@@ -549,5 +883,49 @@ const S: Record<string, React.CSSProperties> = {
     background: 'none', border: 'none',
     color: C.textMuted, fontSize: 12,
     cursor: 'pointer', textDecoration: 'underline',
+  },
+  flowHelpBox: {
+    background: 'rgba(39,39,42,0.45)',
+    border: `1px solid ${C.border}`,
+    borderRadius: 8,
+    padding: 10,
+    color: C.textSecondary,
+    fontSize: 11,
+    lineHeight: 1.45,
+  },
+  flowDrawer: {
+    position: 'absolute' as const,
+    left: 12,
+    right: 12,
+    bottom: 12,
+    background: '#09090b',
+    border: `1px solid ${C.border}`,
+    borderRadius: 10,
+    overflow: 'hidden',
+    zIndex: 40,
+    transition: 'height 0.2s ease',
+    boxShadow: '0 10px 30px rgba(0,0,0,0.35)',
+  },
+  flowDrawerHeader: {
+    height: 46,
+    borderBottom: `1px solid ${C.border}`,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: '0 12px',
+    background: '#12121E',
+  },
+  flowDrawerBtn: {
+    border: `1px solid ${C.border}`,
+    background: C.bgElevated,
+    color: C.textSecondary,
+    borderRadius: 6,
+    fontSize: 11,
+    padding: '5px 8px',
+    cursor: 'pointer',
+  },
+  flowDrawerContent: {
+    height: 'calc(100% - 46px)',
+    padding: 8,
   },
 };

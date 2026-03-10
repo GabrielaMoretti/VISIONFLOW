@@ -596,3 +596,26 @@ export function analyzeTextMoodOklch(
     confidence: result.confidence,
   };
 }
+
+/**
+ * Enhanced text mood analysis.
+ * Tries semantic embeddings first (Transformers.js) and falls back to keyword rules.
+ */
+export async function analyzeTextMoodEnhanced(
+  text: string,
+  intensity: number = 0.65,
+  useAI: boolean = true
+): Promise<
+  | { topAnchor: string; similarity: number; adjustments: MoodAdjustment; allScores: { label: string; score: number }[]; modelUsed: 'semantic-ai' | 'keyword-fallback' }
+  | { moods: string[]; adjustments: MoodAdjustment; confidence: number }
+> {
+  if (useAI) {
+    try {
+      const { analyzeWithSemanticAI } = await import('../lib/ai/semanticMoodAnalyzer');
+      return await analyzeWithSemanticAI(text, intensity);
+    } catch {
+      // Falls back below.
+    }
+  }
+  return analyzeTextMood(text, intensity);
+}
