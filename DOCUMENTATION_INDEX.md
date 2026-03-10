@@ -1,20 +1,20 @@
-# VISIONFLOW - Documentation Index
+﻿# VISIONFLOW - Documentation Index
 
-## 📚 Complete Documentation Guide
+## ðŸ“š Complete Documentation Guide
 
 Welcome to VISIONFLOW! This document helps you navigate all the documentation and get started quickly.
 
 ---
 
-## 🚀 Getting Started (Read in Order)
+## ðŸš€ Getting Started (Read in Order)
 
 ### 1. Start Here
 - **[README.md](./README.md)** - Project overview, features, and quick start
 - **[QUICK_REFERENCE.md](./QUICK_REFERENCE.md)** - Quick commands and common operations
 
 ### 2. Understand the Architecture
-- **[ARCHITECTURE.md](./ARCHITECTURE.md)** - Complete system architecture and technology choices
-- **[PROJECT_STRUCTURE.md](./PROJECT_STRUCTURE.md)** - Folder organization and module design
+- **[ARCHITECTURE.md](./docs/ARCHITECTURE.md)** - Complete system architecture and technology choices
+- **[PROJECT_STRUCTURE.md](./docs/PROJECT_STRUCTURE.md)** - Folder organization and module design
 
 ### 3. Implementation
 - **[IMPLEMENTATION_GUIDE.md](./IMPLEMENTATION_GUIDE.md)** - Step-by-step implementation with code examples
@@ -23,65 +23,65 @@ Welcome to VISIONFLOW! This document helps you navigate all the documentation an
 
 ### 4. Reference
 - **[REFERENCE_REPOSITORIES.md](./REFERENCE_REPOSITORIES.md)** - Open-source projects to study
-- **[ROADMAP.md](./ROADMAP.md)** - 24-week development timeline
+- **[ROADMAP.md](./docs/ROADMAP.md)** - 24-week development timeline
 
 ---
 
-## 📖 Documentation by Role
+## ðŸ“– Documentation by Role
 
 ### For Project Managers
 1. [README.md](./README.md) - Project overview
-2. [ROADMAP.md](./ROADMAP.md) - Timeline and milestones
-3. [ARCHITECTURE.md](./ARCHITECTURE.md) - Technical decisions
+2. [ROADMAP.md](./docs/ROADMAP.md) - Timeline and milestones
+3. [ARCHITECTURE.md](./docs/ARCHITECTURE.md) - Technical decisions
 
 ### For Developers
 1. [QUICK_REFERENCE.md](./QUICK_REFERENCE.md) - Get started fast
 2. [IMPLEMENTATION_GUIDE.md](./IMPLEMENTATION_GUIDE.md) - Step-by-step guide
 3. [API_DESIGN.md](./API_DESIGN.md) - API specifications
-4. [PROJECT_STRUCTURE.md](./PROJECT_STRUCTURE.md) - Code organization
+4. [PROJECT_STRUCTURE.md](./docs/PROJECT_STRUCTURE.md) - Code organization
 
 ### For Architects
-1. [ARCHITECTURE.md](./ARCHITECTURE.md) - System design
+1. [ARCHITECTURE.md](./docs/ARCHITECTURE.md) - System design
 2. [LIBRARIES.md](./LIBRARIES.md) - Technology choices
 3. [REFERENCE_REPOSITORIES.md](./REFERENCE_REPOSITORIES.md) - Prior art
 
 ### For Researchers
 1. [REFERENCE_REPOSITORIES.md](./REFERENCE_REPOSITORIES.md) - Academic projects
 2. [LIBRARIES.md](./LIBRARIES.md) - Computer vision libraries
-3. [ARCHITECTURE.md](./ARCHITECTURE.md) - Color science approach
+3. [ARCHITECTURE.md](./docs/ARCHITECTURE.md) - Color science approach
 
 ---
 
-## 📋 Documentation by Topic
+## ðŸ“‹ Documentation by Topic
 
 ### Technology Stack
-- [ARCHITECTURE.md](./ARCHITECTURE.md) - Overview of all technologies
+- [ARCHITECTURE.md](./docs/ARCHITECTURE.md) - Overview of all technologies
 - [LIBRARIES.md](./LIBRARIES.md) - Detailed library information
 - [package.json](./package.json) - Dependencies list
 
 ### Image Processing
-- [ARCHITECTURE.md#image-processing-core](./ARCHITECTURE.md) - Core processing modules
+- [ARCHITECTURE.md#image-processing-core](./docs/ARCHITECTURE.md) - Core processing modules
 - [LIBRARIES.md#image-processing](./LIBRARIES.md) - OpenCV, Sharp, Jimp
 - [REFERENCE_REPOSITORIES.md#computer-vision](./REFERENCE_REPOSITORIES.md) - CV projects
 
 ### Color Science
-- [ARCHITECTURE.md#color-science](./ARCHITECTURE.md) - Color management approach
+- [ARCHITECTURE.md#color-science](./docs/ARCHITECTURE.md) - Color management approach
 - [LIBRARIES.md#color-science](./LIBRARIES.md) - Color.js, Culori, OCIO
 - [API_DESIGN.md#color-correction](./API_DESIGN.md) - Color APIs
 
 ### GPU/WebGL
-- [ARCHITECTURE.md#gpu-acceleration](./ARCHITECTURE.md) - GPU strategy
+- [ARCHITECTURE.md#gpu-acceleration](./docs/ARCHITECTURE.md) - GPU strategy
 - [LIBRARIES.md#webgl-gpu](./LIBRARIES.md) - Three.js, gpu.js
 - [IMPLEMENTATION_GUIDE.md#webgl-setup](./IMPLEMENTATION_GUIDE.md) - WebGL code
 
 ### UI/UX
-- [PROJECT_STRUCTURE.md#ui](./PROJECT_STRUCTURE.md) - UI components structure
+- [PROJECT_STRUCTURE.md#ui](./docs/PROJECT_STRUCTURE.md) - UI components structure
 - [IMPLEMENTATION_GUIDE.md#ui-components](./IMPLEMENTATION_GUIDE.md) - Component examples
-- [ROADMAP.md#ux-polish](./ROADMAP.md) - UX improvements timeline
+- [ROADMAP.md#ux-polish](./docs/ROADMAP.md) - UX improvements timeline
 
 ---
 
-## 🎯 Common Tasks
+## ðŸŽ¯ Common Tasks
 
 ### "I want to start coding"
 1. Read [QUICK_REFERENCE.md](./QUICK_REFERENCE.md)
@@ -89,8 +89,8 @@ Welcome to VISIONFLOW! This document helps you navigate all the documentation an
 3. Check [package.json](./package.json) for dependencies
 
 ### "I need to understand the architecture"
-1. Read [ARCHITECTURE.md](./ARCHITECTURE.md)
-2. Review [PROJECT_STRUCTURE.md](./PROJECT_STRUCTURE.md)
+1. Read [ARCHITECTURE.md](./docs/ARCHITECTURE.md)
+2. Review [PROJECT_STRUCTURE.md](./docs/PROJECT_STRUCTURE.md)
 3. Check [API_DESIGN.md](./API_DESIGN.md)
 
 ### "I want to integrate a library"
@@ -99,7 +99,7 @@ Welcome to VISIONFLOW! This document helps you navigate all the documentation an
 3. Look at [REFERENCE_REPOSITORIES.md](./REFERENCE_REPOSITORIES.md) for similar projects
 
 ### "I need to understand the timeline"
-1. Read [ROADMAP.md](./ROADMAP.md)
+1. Read [ROADMAP.md](./docs/ROADMAP.md)
 2. Check current phase objectives
 3. Review dependencies between phases
 
@@ -110,7 +110,7 @@ Welcome to VISIONFLOW! This document helps you navigate all the documentation an
 
 ---
 
-## 📊 Document Statistics
+## ðŸ“Š Document Statistics
 
 | Document | Pages | Purpose | Audience |
 |----------|-------|---------|----------|
@@ -127,45 +127,45 @@ Welcome to VISIONFLOW! This document helps you navigate all the documentation an
 
 ---
 
-## 🔍 Quick Links by Module
+## ðŸ” Quick Links by Module
 
 ### Image Analysis Module
-- Architecture: [ARCHITECTURE.md#import-and-analysis](./ARCHITECTURE.md)
+- Architecture: [ARCHITECTURE.md#import-and-analysis](./docs/ARCHITECTURE.md)
 - Implementation: [IMPLEMENTATION_GUIDE.md#phase-4](./IMPLEMENTATION_GUIDE.md)
 - API: [API_DESIGN.md#image-analysis](./API_DESIGN.md)
 
 ### Layer Separation
-- Architecture: [ARCHITECTURE.md#layer-separation](./ARCHITECTURE.md)
+- Architecture: [ARCHITECTURE.md#layer-separation](./docs/ARCHITECTURE.md)
 - Libraries: [LIBRARIES.md#opencv](./LIBRARIES.md)
 - API: [API_DESIGN.md#layer-separation](./API_DESIGN.md)
 
 ### Color Correction
-- Architecture: [ARCHITECTURE.md#colorimetry](./ARCHITECTURE.md)
+- Architecture: [ARCHITECTURE.md#colorimetry](./docs/ARCHITECTURE.md)
 - Implementation: [IMPLEMENTATION_GUIDE.md#phase-5](./IMPLEMENTATION_GUIDE.md)
 - API: [API_DESIGN.md#color-correction](./API_DESIGN.md)
 
 ### Depth Control
-- Architecture: [ARCHITECTURE.md#depth-control](./ARCHITECTURE.md)
+- Architecture: [ARCHITECTURE.md#depth-control](./docs/ARCHITECTURE.md)
 - Libraries: [LIBRARIES.md#midas](./LIBRARIES.md)
 - API: [API_DESIGN.md#depth-control](./API_DESIGN.md)
 
 ### Lens Simulation
-- Architecture: [ARCHITECTURE.md#lens-simulation](./ARCHITECTURE.md)
+- Architecture: [ARCHITECTURE.md#lens-simulation](./docs/ARCHITECTURE.md)
 - Implementation: [IMPLEMENTATION_GUIDE.md#webgl-setup](./IMPLEMENTATION_GUIDE.md)
 - API: [API_DESIGN.md#lens-simulation](./API_DESIGN.md)
 
 ### Texture & Refinement
-- Architecture: [ARCHITECTURE.md#texture-refinement](./ARCHITECTURE.md)
+- Architecture: [ARCHITECTURE.md#texture-refinement](./docs/ARCHITECTURE.md)
 - API: [API_DESIGN.md#texture-refinement](./API_DESIGN.md)
 
 ### Look Builder
-- Architecture: [ARCHITECTURE.md#look-builder](./ARCHITECTURE.md)
+- Architecture: [ARCHITECTURE.md#look-builder](./docs/ARCHITECTURE.md)
 - Libraries: [LIBRARIES.md#opencolorio](./LIBRARIES.md)
 - API: [API_DESIGN.md#look-builder](./API_DESIGN.md)
 
 ---
 
-## 🎓 Learning Path
+## ðŸŽ“ Learning Path
 
 ### Beginner (Week 1-2)
 1. Read README and QUICK_REFERENCE
@@ -193,7 +193,7 @@ Welcome to VISIONFLOW! This document helps you navigate all the documentation an
 
 ---
 
-## 🛠️ Tools & Resources
+## ðŸ› ï¸ Tools & Resources
 
 ### Essential Tools
 - Node.js 18+
@@ -216,7 +216,7 @@ Welcome to VISIONFLOW! This document helps you navigate all the documentation an
 
 ---
 
-## 📝 Contribution Guidelines
+## ðŸ“ Contribution Guidelines
 
 ### Documentation Updates
 1. Keep documentation in sync with code
@@ -232,7 +232,7 @@ Welcome to VISIONFLOW! This document helps you navigate all the documentation an
 
 ---
 
-## 🔄 Documentation Maintenance
+## ðŸ”„ Documentation Maintenance
 
 ### Regular Updates
 - **Weekly**: ROADMAP.md progress
@@ -247,7 +247,7 @@ Welcome to VISIONFLOW! This document helps you navigate all the documentation an
 
 ---
 
-## ❓ FAQ
+## â“ FAQ
 
 ### "Where do I start?"
 Start with [README.md](./README.md) then [QUICK_REFERENCE.md](./QUICK_REFERENCE.md)
@@ -259,17 +259,17 @@ Check [IMPLEMENTATION_GUIDE.md](./IMPLEMENTATION_GUIDE.md) and [API_DESIGN.md](.
 See [LIBRARIES.md](./LIBRARIES.md) for comprehensive guide
 
 ### "What's the project timeline?"
-Check [ROADMAP.md](./ROADMAP.md) for 24-week plan
+Check [ROADMAP.md](./docs/ROADMAP.md) for 24-week plan
 
 ### "Where can I find code examples?"
 See [IMPLEMENTATION_GUIDE.md](./IMPLEMENTATION_GUIDE.md) and [QUICK_REFERENCE.md](./QUICK_REFERENCE.md)
 
 ### "How is the code organized?"
-See [PROJECT_STRUCTURE.md](./PROJECT_STRUCTURE.md)
+See [PROJECT_STRUCTURE.md](./docs/PROJECT_STRUCTURE.md)
 
 ---
 
-## 📞 Getting Help
+## ðŸ“ž Getting Help
 
 1. Check this index for relevant documentation
 2. Search within specific documents
@@ -279,16 +279,16 @@ See [PROJECT_STRUCTURE.md](./PROJECT_STRUCTURE.md)
 
 ---
 
-## 🎯 Next Steps
+## ðŸŽ¯ Next Steps
 
-1. ✅ Read this index
-2. 📖 Read [README.md](./README.md)
-3. ⚡ Check [QUICK_REFERENCE.md](./QUICK_REFERENCE.md)
-4. 🏗️ Study [ARCHITECTURE.md](./ARCHITECTURE.md)
-5. 💻 Start [IMPLEMENTATION_GUIDE.md](./IMPLEMENTATION_GUIDE.md)
+1. âœ… Read this index
+2. ðŸ“– Read [README.md](./README.md)
+3. âš¡ Check [QUICK_REFERENCE.md](./QUICK_REFERENCE.md)
+4. ðŸ—ï¸ Study [ARCHITECTURE.md](./docs/ARCHITECTURE.md)
+5. ðŸ’» Start [IMPLEMENTATION_GUIDE.md](./IMPLEMENTATION_GUIDE.md)
 
 ---
 
-**Happy Building! 🎨**
+**Happy Building! ðŸŽ¨**
 
 *VISIONFLOW - Professional image editing by physical control and intuitive flow*

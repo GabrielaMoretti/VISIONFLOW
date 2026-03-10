@@ -1,0 +1,32 @@
+{
+  "expo": {
+    "name": "VisionFlow",
+    "slug": "visionflow",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "dark",
+    "splash": {
+      "backgroundColor": "#0A0A12"
+    },
+    "assetBundlePatterns": ["**/*"],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.visionflow.app"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#0A0A12"
+      },
+      "package": "com.visionflow.app"
+    },
+    "web": {
+      "favicon": "./assets/favicon.png",
+      "bundler": "metro"
+    },
+    "scheme": "visionflow",
+    "extra": {
+      "apiUrl": "http://localhost:8000"
+    }
+  }
+}

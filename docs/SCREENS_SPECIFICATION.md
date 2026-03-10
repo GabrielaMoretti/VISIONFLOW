@@ -4,6 +4,20 @@
 
 Este documento detalha todas as telas e funcionalidades do VISIONFLOW, organizadas por fluxo de usuário. Cada tela inclui propósito, componentes visuais, funcionalidades técnicas, interações UX e estados de feedback.
 
+### Status de Implementação
+
+| # | Tela | Status |
+|---|------|--------|
+| 1 | Dashboard de Projetos (Home) | ✅ Implementada |
+| 2 | Arquiteto de Funil | 🔮 Planejada (futuro) |
+| 3 | Gestor de Blueprints | 🔮 Planejada (futuro) |
+| 4 | Estúdio de Criação (Editor) | ✅ Implementada |
+| 5 | Centro de Preview | ✅ Implementada |
+| 6 | Biblioteca de Blueprints | 🔮 Planejada (futuro) |
+| 7 | Central de Exportação | 🔮 Planejada (futuro) |
+
+> **Nota:** As telas marcadas como "Planejada" são especificações para desenvolvimento futuro. As 3 telas implementadas (Home → Editor → Preview) cobrem o fluxo completo de edição.
+
 ---
 
 ## 🗺️ Mapa de Navegação

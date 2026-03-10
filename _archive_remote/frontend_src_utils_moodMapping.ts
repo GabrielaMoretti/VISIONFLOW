@@ -1,45 +1,26 @@
-/**
- * Mood Mapping System — Cinematographic Edition (OKLCH)
+﻿/**
+ * Mood Mapping System ÔÇö Cinematographic Edition
  *
  * Philosophy: Less is more. Professional colorists raramente passam de 20-30%
- * do range de um parâmetro. O objetivo é direção, não saturação.
+ * do range de um par├ómetro. O objetivo ├® dire├º├úo, n├úo satura├º├úo.
  *
- * ⚡ OKLCH Integration (v2):
- *   Todos os ajustes de cor agora são calculados internamente em OKLCH,
- *   que é perceptualmente uniforme — um delta de +10° em hue no vermelho
- *   produz o MESMO efeito visual que +10° no verde. Isso elimina o problema
- *   fundamental do HSL onde ajustes idênticos produzem resultados inconsistentes.
- *
- * Ranges calibrados (escala cinematográfica):
- *   hslHueDelta      — rotação relativa de matiz (-30 a +30)
- *   hslSaturation    — delta de saturação (-25 a +25)
- *   hslLightness     — delta de luminosidade (-15 a +15)
- *   vignetteAmount   — força da vinheta (0 a 40)
- *   sharpenAmount    — nitidez delta (-20 a +40)
- *   splitHighlightHue — matiz do cast nas altas-luzes (0 a 360, absoluto)
- *   splitHighlightSat — intensidade do cast nas altas-luzes (0 a 30)
- *   splitShadowHue   — matiz do cast nas sombras (0 a 360, absoluto)
- *   splitShadowSat   — intensidade do cast nas sombras (0 a 35)
- *   contrastDelta    — delta de contraste (-15 a +20)
- *   temperatureDelta — shift de balanço de branco, quente/frio (-20 a +20)
+ * Ranges calibrados (escala cinematogr├ífica):
+ *   hslHueDelta      ÔÇö rota├º├úo relativa de matiz (-30 a +30)
+ *   hslSaturation    ÔÇö delta de satura├º├úo (-25 a +25)
+ *   hslLightness     ÔÇö delta de luminosidade (-15 a +15)
+ *   vignetteAmount   ÔÇö for├ºa da vinheta (0 a 40)
+ *   sharpenAmount    ÔÇö nitidez delta (-20 a +40)
+ *   splitHighlightHue ÔÇö matiz do cast nas altas-luzes (0 a 360, absoluto)
+ *   splitHighlightSat ÔÇö intensidade do cast nas altas-luzes (0 a 30)
+ *   splitShadowHue   ÔÇö matiz do cast nas sombras (0 a 360, absoluto)
+ *   splitShadowSat   ÔÇö intensidade do cast nas sombras (0 a 35)
+ *   contrastDelta    ÔÇö delta de contraste (-15 a +20)
+ *   temperatureDelta ÔÇö shift de balan├ºo de branco, quente/frio (-20 a +20)
  */
 
-import {
-  hslDeltaToOklchDelta,
-  splitToneColor,
-  type OklchColor,
-} from '../lib/color/colorSpaces';
-
-import {
-  type FilmicPresetName,
-  FILMIC_PRESETS,
-  type SplitToneCurveParams,
-  SPLIT_TONE_DEFAULT,
-} from '../lib/color/toneMapping';
-
 export interface MoodAdjustment {
-  hslHueDelta?: number;       // rotação relativa de matiz (-30 a +30)
-  hslSaturation?: number;     // delta de saturação (-25 a +25)
+  hslHueDelta?: number;       // rota├º├úo relativa de matiz (-30 a +30)
+  hslSaturation?: number;     // delta de satura├º├úo (-25 a +25)
   hslLightness?: number;      // delta de luminosidade (-15 a +15)
   vignetteAmount?: number;    // 0 a 40
   sharpenAmount?: number;     // -20 a +40
@@ -49,29 +30,6 @@ export interface MoodAdjustment {
   splitShadowSat?: number;    // 0 a 35
   contrastDelta?: number;     // -15 a +20
   temperatureDelta?: number;  // shift quente/frio (-20 a +20)
-}
-
-/**
- * OKLCH-aware mood adjustment — the actual values used by the rendering pipeline.
- * Generated from MoodAdjustment via toOklchMoodAdjustment().
- */
-export interface OklchMoodAdjustment {
-  /** OKLCH hue rotation in degrees */
-  hueDelta: number;
-  /** OKLCH chroma delta (perceptually uniform saturation) */
-  chromaDelta: number;
-  /** OKLCH lightness delta (perceptually uniform brightness) */
-  lightnessDelta: number;
-  /** Split-tone highlight color in OKLCH */
-  splitHighlight: OklchColor | null;
-  /** Split-tone shadow color in OKLCH */
-  splitShadow: OklchColor | null;
-  /** Filmic curve preset to apply */
-  filmicPreset: FilmicPresetName;
-  /** Split-tone curve params (shadow lift, highlight rolloff) */
-  splitToneCurve: SplitToneCurveParams;
-  /** Original adjustment for non-color params */
-  raw: MoodAdjustment;
 }
 
 export interface MoodKeyword {
@@ -84,16 +42,16 @@ export interface MoodKeyword {
 }
 
 /**
- * MOOD_LIBRARY — Calibrado para output cinematográfico/editorial.
+ * MOOD_LIBRARY ÔÇö Calibrado para output cinematogr├ífico/editorial.
  *
- * Cada mood usa no máximo 3-4 ajustes principais.
- * Split toning (highlight/shadow hues) é a ferramenta primária —
- * é o que separa "fílmico" de "filtrado".
+ * Cada mood usa no m├íximo 3-4 ajustes principais.
+ * Split toning (highlight/shadow hues) ├® a ferramenta prim├íria ÔÇö
+ * ├® o que separa "f├¡lmico" de "filtrado".
  */
 export const MOOD_LIBRARY: MoodKeyword[] = [
   {
-    name: 'melancólico',
-    keywords: ['melancólico', 'triste', 'saudade', 'nostalgia', 'blue', 'downtempo', 'sad', 'melancholy'],
+    name: 'melanc├│lico',
+    keywords: ['melanc├│lico', 'triste', 'saudade', 'nostalgia', 'blue', 'downtempo', 'sad', 'melancholy'],
     adjustments: {
       temperatureDelta: -8,
       hslSaturation: -8,
@@ -110,7 +68,7 @@ export const MOOD_LIBRARY: MoodKeyword[] = [
   },
   {
     name: 'lo-fi',
-    keywords: ['lo-fi', 'lofi', 'vintage', 'retro', 'grainy', 'nostálgico', 'analog'],
+    keywords: ['lo-fi', 'lofi', 'vintage', 'retro', 'grainy', 'nost├ílgico', 'analog'],
     adjustments: {
       temperatureDelta: 10,
       hslSaturation: -12,
@@ -175,8 +133,8 @@ export const MOOD_LIBRARY: MoodKeyword[] = [
     dominance: 0.8,
   },
   {
-    name: 'energético',
-    keywords: ['energético', 'vibrante', 'vivo', 'ecstático', 'euphoric', 'festa', 'energy', 'pop'],
+    name: 'energ├®tico',
+    keywords: ['energ├®tico', 'vibrante', 'vivo', 'ecst├ítico', 'euphoric', 'festa', 'energy', 'pop'],
     adjustments: {
       hslSaturation: 15,
       hslLightness: 5,
@@ -223,7 +181,7 @@ export const MOOD_LIBRARY: MoodKeyword[] = [
   },
   {
     name: 'cinematic',
-    keywords: ['cinematic', 'film', 'movie', 'blockbuster', 'epic', 'drama', 'cinemático'],
+    keywords: ['cinematic', 'film', 'movie', 'blockbuster', 'epic', 'drama', 'cinem├ítico'],
     adjustments: {
       temperatureDelta: -6,
       hslSaturation: -8,
@@ -231,7 +189,7 @@ export const MOOD_LIBRARY: MoodKeyword[] = [
       splitShadowHue: 210,
       splitShadowSat: 20,
       splitHighlightHue: 35,
-      splitHighlightSat: 12,  // teal-orange — o look clássico de filme
+      splitHighlightSat: 12,  // teal-orange ÔÇö o look cl├íssico de filme
       vignetteAmount: 28,
       contrastDelta: 10,
       sharpenAmount: 12,
@@ -241,7 +199,7 @@ export const MOOD_LIBRARY: MoodKeyword[] = [
   },
   {
     name: 'ethereal',
-    keywords: ['ethereal', 'dreamlike', 'surreal', 'dream', 'magic', 'celestial', 'etéreo', 'dream pop'],
+    keywords: ['ethereal', 'dreamlike', 'surreal', 'dream', 'magic', 'celestial', 'et├®reo', 'dream pop'],
     adjustments: {
       temperatureDelta: -3,
       hslSaturation: 8,
@@ -288,7 +246,7 @@ export const MOOD_LIBRARY: MoodKeyword[] = [
   },
   {
     name: 'desert',
-    keywords: ['desert', 'sandy', 'arid', 'hot', 'dust', 'deserto', 'árido'],
+    keywords: ['desert', 'sandy', 'arid', 'hot', 'dust', 'deserto', '├írido'],
     adjustments: {
       temperatureDelta: 15,
       hslSaturation: 8,
@@ -322,7 +280,7 @@ export const MOOD_LIBRARY: MoodKeyword[] = [
   },
   {
     name: 'underwater',
-    keywords: ['underwater', 'aquatic', 'deep', 'submerged', 'liquid', 'subaquático'],
+    keywords: ['underwater', 'aquatic', 'deep', 'submerged', 'liquid', 'subaqu├ítico'],
     adjustments: {
       temperatureDelta: -15,
       hslSaturation: 15,
@@ -340,7 +298,7 @@ export const MOOD_LIBRARY: MoodKeyword[] = [
   },
   {
     name: 'sunset',
-    keywords: ['sunset', 'sunrise', 'golden', 'orange', 'dusk', 'pôr do sol', 'golden hour'],
+    keywords: ['sunset', 'sunrise', 'golden', 'orange', 'dusk', 'p├┤r do sol', 'golden hour'],
     adjustments: {
       temperatureDelta: 18,
       hslSaturation: 12,
@@ -357,7 +315,7 @@ export const MOOD_LIBRARY: MoodKeyword[] = [
   },
   {
     name: 'black & white',
-    keywords: ['black and white', 'b&w', 'preto e branco', 'monochrome', 'monochromatic', 'monocromático'],
+    keywords: ['black and white', 'b&w', 'preto e branco', 'monochrome', 'monochromatic', 'monocrom├ítico'],
     adjustments: {
       hslSaturation: -80,
       contrastDelta: 15,
@@ -384,16 +342,16 @@ export const MOOD_LIBRARY: MoodKeyword[] = [
 ];
 
 // ---------------------------------------------------------------------------
-// Função principal de análise
+// Fun├º├úo principal de an├ílise
 // ---------------------------------------------------------------------------
 
 /**
- * Analisa uma descrição de texto e retorna ajustes mood-driven.
+ * Analisa uma descri├º├úo de texto e retorna ajustes mood-driven.
  *
- * @param text — descrição em linguagem natural do mood, vibe ou gênero
- * @param intensity — multiplicador global de intensidade (0.0 a 1.0, padrão 0.65)
- *   Use 0.4–0.6 para looks sutis, editoriais.
- *   Use 0.7–0.9 para music video / direção de arte mais marcante.
+ * @param text ÔÇö descri├º├úo em linguagem natural do mood, vibe ou g├¬nero
+ * @param intensity ÔÇö multiplicador global de intensidade (0.0 a 1.0, padr├úo 0.65)
+ *   Use 0.4ÔÇô0.6 para looks sutis, editoriais.
+ *   Use 0.7ÔÇô0.9 para music video / dire├º├úo de arte mais marcante.
  */
 export function analyzeTextMood(
   text: string,
@@ -412,7 +370,7 @@ export function analyzeTextMood(
 
   matches.sort((a, b) => b.matchCount - a.matchCount);
 
-  // Máximo 2 moods — mais que isso dilui o caráter
+  // M├íximo 2 moods ÔÇö mais que isso dilui o car├íter
   const topMoods = matches.slice(0, 2);
   const moodNames = topMoods.map(m => m.keyword.name);
 
@@ -457,8 +415,8 @@ export function getSuggestedKeywords(partial: string): string[] {
 // ---------------------------------------------------------------------------
 
 /**
- * Blenda MoodAdjustments usando média ponderada.
- * Só mistura chaves presentes no mood PRIMÁRIO — o secundário apenas nuança.
+ * Blenda MoodAdjustments usando m├®dia ponderada.
+ * S├│ mistura chaves presentes no mood PRIM├üRIO ÔÇö o secund├írio apenas nuan├ºa.
  */
 function blendAdjustments(adjustments: MoodAdjustment[], weights: number[]): MoodAdjustment {
   const totalWeight = weights.reduce((a, b) => a + b, 0);
@@ -468,7 +426,7 @@ function blendAdjustments(adjustments: MoodAdjustment[], weights: number[]): Moo
   const primaryKeys = Object.keys(adjustments[0] ?? {}) as (keyof MoodAdjustment)[];
   const keys = new Set<keyof MoodAdjustment>(primaryKeys);
 
-  // Secundários só contribuem em chaves que existem no primário
+  // Secund├írios s├│ contribuem em chaves que existem no prim├írio
   adjustments.slice(1).forEach(adj => {
     (Object.keys(adj) as (keyof MoodAdjustment)[]).forEach(k => {
       if (primaryKeys.includes(k)) keys.add(k);
@@ -495,25 +453,15 @@ function blendAdjustments(adjustments: MoodAdjustment[], weights: number[]): Moo
 }
 
 /**
- * Escala todos os valores numéricos por um fator 0–1.
- * Mantém as proporções entre parâmetros intactas.
- * Nota: hues absolutos (splitHighlightHue, splitShadowHue) NÃO são escalados
- * porque representam posição na roda de cor, não intensidade.
+ * Escala todos os valores num├®ricos por um fator 0ÔÇô1.
+ * Mant├®m as propor├º├Áes entre par├ómetros intactas.
  */
 function scaleAdjustments(adj: MoodAdjustment, factor: number): MoodAdjustment {
   const result: MoodAdjustment = {};
-  const absoluteKeys: Set<keyof MoodAdjustment> = new Set([
-    'splitHighlightHue',
-    'splitShadowHue',
-  ]);
-
   (Object.keys(adj) as (keyof MoodAdjustment)[]).forEach(key => {
     const val = adj[key];
     if (typeof val === 'number') {
-      // Absolute hue values should not be scaled
-      result[key] = absoluteKeys.has(key)
-        ? val as any
-        : Math.round(val * factor) as any;
+      result[key] = Math.round(val * factor) as any;
     }
   });
   return result;
@@ -521,78 +469,4 @@ function scaleAdjustments(adj: MoodAdjustment, factor: number): MoodAdjustment {
 
 function clamp01(v: number): number {
   return Math.max(0, Math.min(1, v));
-}
-
-// ---------------------------------------------------------------------------
-// OKLCH conversion — the bridge to the new pipeline
-// ---------------------------------------------------------------------------
-
-/**
- * Convert a MoodAdjustment (HSL-scale values) to OklchMoodAdjustment.
- * This is where the magic happens — perceptually uniform adjustments.
- *
- * The split-tone colors are generated in OKLCH space, which means
- * a blue shadow cast and an orange highlight cast will have the same
- * perceptual intensity (unlike HSL where orange always dominates blue).
- */
-export function toOklchMoodAdjustment(adj: MoodAdjustment): OklchMoodAdjustment {
-  const oklchDeltas = hslDeltaToOklchDelta({
-    hslHueDelta: adj.hslHueDelta,
-    hslSaturation: adj.hslSaturation,
-    hslLightness: adj.hslLightness,
-  });
-
-  // Generate split-tone colors in OKLCH
-  const splitHighlight = (adj.splitHighlightHue !== undefined && adj.splitHighlightSat !== undefined)
-    ? splitToneColor(adj.splitHighlightHue, adj.splitHighlightSat, 'highlight')
-    : null;
-
-  const splitShadow = (adj.splitShadowHue !== undefined && adj.splitShadowSat !== undefined)
-    ? splitToneColor(adj.splitShadowHue, adj.splitShadowSat, 'shadow')
-    : null;
-
-  // Auto-select filmic preset based on mood contrast
-  const contrast = adj.contrastDelta ?? 0;
-  let filmicPreset: FilmicPresetName = 'default';
-  if (contrast >= 15) filmicPreset = 'veryHighContrast';
-  else if (contrast >= 8) filmicPreset = 'highContrast';
-  else if (contrast <= -5) filmicPreset = 'lowContrast';
-
-  // Derive split-tone curve from mood characteristics
-  const splitToneCurve: SplitToneCurveParams = {
-    ...SPLIT_TONE_DEFAULT,
-    // Moods with negative lightness → more shadow gamma (deeper shadows)
-    shadowGamma: SPLIT_TONE_DEFAULT.shadowGamma + (adj.hslLightness ?? 0) * 0.01,
-    // High contrast moods → more highlight compression
-    highlightGamma: SPLIT_TONE_DEFAULT.highlightGamma + contrast * 0.005,
-    // Temperature affects shadow lift (warm moods → slightly lifted shadows)
-    shadowLift: SPLIT_TONE_DEFAULT.shadowLift + Math.max(0, (adj.temperatureDelta ?? 0) * 0.001),
-  };
-
-  return {
-    hueDelta: oklchDeltas.hueDelta,
-    chromaDelta: oklchDeltas.chromaDelta,
-    lightnessDelta: oklchDeltas.lightnessDelta,
-    splitHighlight,
-    splitShadow,
-    filmicPreset,
-    splitToneCurve,
-    raw: adj,
-  };
-}
-
-/**
- * All-in-one: analyze text and return OKLCH-ready adjustments.
- * Use this instead of analyzeTextMood() for the new pipeline.
- */
-export function analyzeTextMoodOklch(
-  text: string,
-  intensity: number = 0.65
-): { moods: string[]; adjustments: OklchMoodAdjustment; confidence: number } {
-  const result = analyzeTextMood(text, intensity);
-  return {
-    moods: result.moods,
-    adjustments: toOklchMoodAdjustment(result.adjustments),
-    confidence: result.confidence,
-  };
 }

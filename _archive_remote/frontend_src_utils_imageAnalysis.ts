@@ -1,22 +1,10 @@
-/**
+﻿/**
  * Image Analysis System
  * Extracts color science metrics from images for mood-driven adjustments
  * Uses Canvas API for client-side processing
- *
- * ⚡ v2: OKLCH Integration
- *   analyzeReferenceImageOklch() provides perceptually accurate metrics.
- *   estimateTemperatureOklch() replaces the old hue-based approximation
- *   with proper OKLCH-space temperature estimation from Culori.
  */
 
 import { MoodAdjustment } from './moodMapping';
-import {
-  pixelsToOklch,
-  estimateTemperatureOklch,
-  colorDistance,
-  oklchToHex,
-  type OklchColor,
-} from '../lib/color/colorSpaces';
 
 export interface ImageMetrics {
   temperature: number;      // -50 to 50 (cold to warm)
@@ -29,7 +17,7 @@ export interface ImageMetrics {
 }
 
 // ---------------------------------------------------------------------------
-// Conversões de cor
+// Convers├Áes de cor
 // ---------------------------------------------------------------------------
 
 export function rgbToHsl(r: number, g: number, b: number): [number, number, number] {
@@ -86,7 +74,7 @@ export function hslToRgb(h: number, s: number, l: number): [number, number, numb
 }
 
 // ---------------------------------------------------------------------------
-// Análise de imagem de referência
+// An├ílise de imagem de refer├¬ncia
 // ---------------------------------------------------------------------------
 
 export function analyzeReferenceImage(
@@ -125,11 +113,11 @@ export function analyzeReferenceImage(
   const avgS = hslValues.reduce((sum, [, s]) => sum + s, 0) / hslValues.length;
   const avgL = hslValues.reduce((sum, [, , l]) => sum + l, 0) / hslValues.length;
 
-  // Temperatura contínua: interpolação baseada no matiz médio
-  // Quente (vermelho-laranja ~20°) = +50, Frio (azul ~220°) = -50
+  // Temperatura cont├¡nua: interpola├º├úo baseada no matiz m├®dio
+  // Quente (vermelho-laranja ~20┬░) = +50, Frio (azul ~220┬░) = -50
   const temperature = computeTemperatureFromHue(avgH, avgS);
 
-  // Contraste: desvio padrão da luminosidade
+  // Contraste: desvio padr├úo da luminosidade
   const variance = hslValues.reduce((sum, [, , l]) => sum + Math.pow(l - avgL, 2), 0) / hslValues.length;
   const contrast = Math.min(100, Math.sqrt(variance) * 2);
 
@@ -145,22 +133,22 @@ export function analyzeReferenceImage(
 }
 
 /**
- * Calcula temperatura de cor de forma contínua a partir do matiz médio.
- * Elimina o comportamento binário (+30/-30) do código original.
+ * Calcula temperatura de cor de forma cont├¡nua a partir do matiz m├®dio.
+ * Elimina o comportamento bin├írio (+30/-30) do c├│digo original.
  *
- * Modelo de referência (simplificado do Bradford):
- *   Matizes quentes: 0°–50° e 330°–360° (vermelho, laranja, amarelo)
- *   Matizes frios:   180°–260° (ciano, azul)
+ * Modelo de refer├¬ncia (simplificado do Bradford):
+ *   Matizes quentes: 0┬░ÔÇô50┬░ e 330┬░ÔÇô360┬░ (vermelho, laranja, amarelo)
+ *   Matizes frios:   180┬░ÔÇô260┬░ (ciano, azul)
  *   Neutro:          resto
  */
 function computeTemperatureFromHue(avgH: number, avgS: number): number {
-  // Normaliza matiz para 0–360
+  // Normaliza matiz para 0ÔÇô360
   const h = ((avgH % 360) + 360) % 360;
 
   let raw: number;
 
   if (h <= 50) {
-    // Vermelho-laranja: quente máximo próximo de 20°
+    // Vermelho-laranja: quente m├íximo pr├│ximo de 20┬░
     raw = 50 * Math.cos(((h - 20) / 50) * (Math.PI / 2));
   } else if (h <= 80) {
     // Amarelo: levemente quente
@@ -172,17 +160,17 @@ function computeTemperatureFromHue(avgH: number, avgS: number): number {
     // Ciano: levemente frio
     raw = -10 * ((h - 160) / 40);
   } else if (h <= 260) {
-    // Azul: frio máximo em ~220°
+    // Azul: frio m├íximo em ~220┬░
     raw = -50 * Math.cos(((h - 220) / 60) * (Math.PI / 2));
   } else if (h <= 300) {
-    // Índigo/violeta: levemente frio
+    // ├ìndigo/violeta: levemente frio
     raw = -20 * (1 - (h - 260) / 40);
   } else {
     // Magenta/vermelho: de volta ao quente
     raw = 20 * ((h - 300) / 60);
   }
 
-  // Atenuação pela saturação: imagem dessaturada tem temperatura menos marcada
+  // Atenua├º├úo pela satura├º├úo: imagem dessaturada tem temperatura menos marcada
   const satFactor = Math.min(1, avgS / 40);
   return Math.round(raw * satFactor);
 }
@@ -192,17 +180,17 @@ function computeTemperatureFromHue(avgH: number, avgS: number): number {
 // ---------------------------------------------------------------------------
 
 /**
- * Combina ajustes de mood textual com métricas da imagem de referência.
+ * Combina ajustes de mood textual com m├®tricas da imagem de refer├¬ncia.
  *
  * Filosofia:
- *   - O texto expressa a INTENÇÃO do usuário → peso dominante (padrão 75%)
- *   - A imagem de referência informa COMPENSAÇÕES sutis → peso menor (25%)
- *   - A imagem não gera novos ajustes — apenas nuança os existentes
- *   - Vinheta não é somada: usa-se a maior entre mood e imagem detectada
+ *   - O texto expressa a INTEN├ç├âO do usu├írio ÔåÆ peso dominante (padr├úo 75%)
+ *   - A imagem de refer├¬ncia informa COMPENSA├ç├òES sutis ÔåÆ peso menor (25%)
+ *   - A imagem n├úo gera novos ajustes ÔÇö apenas nuan├ºa os existentes
+ *   - Vinheta n├úo ├® somada: usa-se a maior entre mood e imagem detectada
  *
- * @param textAdjustments  — ajustes vindos de analyzeTextMood()
- * @param imageMetrics     — métricas vindas de analyzeReferenceImage()
- * @param textWeight       — peso do texto (0–100, padrão 75)
+ * @param textAdjustments  ÔÇö ajustes vindos de analyzeTextMood()
+ * @param imageMetrics     ÔÇö m├®tricas vindas de analyzeReferenceImage()
+ * @param textWeight       ÔÇö peso do texto (0ÔÇô100, padr├úo 75)
  */
 export function combineAdjustments(
   textAdjustments: MoodAdjustment,
@@ -212,11 +200,11 @@ export function combineAdjustments(
   const tw = Math.max(0, Math.min(100, textWeight)) / 100;
   const iw = 1 - tw;
 
-  // Compensações derivadas da imagem (escala conservadora)
-  // Objetivo: adaptar o mood à imagem, não sobrescrever
+  // Compensa├º├Áes derivadas da imagem (escala conservadora)
+  // Objetivo: adaptar o mood ├á imagem, n├úo sobrescrever
   const imageCompensation: Partial<MoodAdjustment> = {
     hslSaturation: imageMetrics.saturation > 65
-      ? Math.round(-6 * iw)   // imagem já saturada: recua um pouco
+      ? Math.round(-6 * iw)   // imagem j├í saturada: recua um pouco
       : imageMetrics.saturation < 20
       ? Math.round(4 * iw)    // imagem dessaturada: empurra levemente
       : 0,
@@ -233,7 +221,7 @@ export function combineAdjustments(
     temperatureDelta: Math.round(imageMetrics.temperature * 0.15 * iw),
   };
 
-  // Monta resultado: texto é a base, compensação da imagem é aplicada em cima
+  // Monta resultado: texto ├® a base, compensa├º├úo da imagem ├® aplicada em cima
   const result: MoodAdjustment = { ...textAdjustments };
 
   (Object.keys(imageCompensation) as (keyof MoodAdjustment)[]).forEach(key => {
@@ -244,7 +232,7 @@ export function combineAdjustments(
     result[key] = Math.round(existing + comp) as any;
   });
 
-  // Vinheta: não soma — usa a maior entre a do mood e 40% da detectada na imagem
+  // Vinheta: n├úo soma ÔÇö usa a maior entre a do mood e 40% da detectada na imagem
   const moodVig = textAdjustments.vignetteAmount ?? 0;
   const imageVigContrib = Math.round(imageMetrics.vignette * 0.4);
   result.vignetteAmount = Math.max(moodVig, imageVigContrib);
@@ -253,7 +241,7 @@ export function combineAdjustments(
 }
 
 // ---------------------------------------------------------------------------
-// Utilitários de análise de imagem
+// Utilit├írios de an├ílise de imagem
 // ---------------------------------------------------------------------------
 
 export function extractDominantColors(imageData: ImageData, count: number = 5): string[] {
@@ -340,145 +328,6 @@ export function detectVignette(imageData: ImageData): number {
 
   const diff = Math.max(0, centerBrightness - cornerBrightness);
   return Math.min(100, (diff / 255) * 100 * 1.5);
-}
-
-// ---------------------------------------------------------------------------
-// OKLCH-based analysis (v2 — perceptually uniform)
-// ---------------------------------------------------------------------------
-
-export interface OklchImageMetrics {
-  temperature: number;         // -50 to 50 (cold to warm), OKLCH-based
-  perceptualSaturation: number; // 0 to 100 (OKLCH chroma, perceptually uniform)
-  contrast: number;            // 0 to 100
-  perceptualLightness: number; // 0 to 100 (OKLCH L, perceptually uniform)
-  sharpness: number;
-  dominantColors: OklchColor[];
-  dominantColorsHex: string[];
-  averageChroma: number;       // raw OKLCH chroma (0–0.4)
-  vignette: number;
-}
-
-/**
- * OKLCH-based image analysis — use this for the new pipeline.
- * All metrics are perceptually uniform, which means:
- *   - A saturation difference of 10 looks the same regardless of hue
- *   - Lightness values accurately reflect perceived brightness
- *   - Temperature estimation is more accurate across the entire hue wheel
- */
-export function analyzeReferenceImageOklch(
-  canvas: HTMLCanvasElement,
-  image: HTMLImageElement
-): OklchImageMetrics {
-  const ctx = canvas.getContext('2d')!;
-  canvas.width = image.width;
-  canvas.height = image.height;
-  ctx.drawImage(image, 0, 0);
-
-  const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-  const data = imageData.data;
-
-  // Sample pixels in OKLCH via Culori
-  const step = Math.max(1, Math.floor(Math.sqrt(data.length / 4 / 500)));
-  const oklchValues = pixelsToOklch(data, step);
-
-  if (oklchValues.length === 0) {
-    return {
-      temperature: 0, perceptualSaturation: 50, contrast: 50,
-      perceptualLightness: 50, sharpness: 50, dominantColors: [],
-      dominantColorsHex: [], averageChroma: 0, vignette: 0,
-    };
-  }
-
-  // Average OKLCH values
-  const avgL = oklchValues.reduce((sum, [l]) => sum + l, 0) / oklchValues.length;
-  const avgC = oklchValues.reduce((sum, [, c]) => sum + c, 0) / oklchValues.length;
-  // Circular mean for hue (handles wrap-around at 360°)
-  const sinSum = oklchValues.reduce((sum, [, , h]) => sum + Math.sin(h * Math.PI / 180), 0);
-  const cosSum = oklchValues.reduce((sum, [, , h]) => sum + Math.cos(h * Math.PI / 180), 0);
-  const avgH = ((Math.atan2(sinSum, cosSum) * 180 / Math.PI) % 360 + 360) % 360;
-
-  // Temperature from OKLCH hue (perceptually accurate)
-  const avgColor: OklchColor = { l: avgL, c: avgC, h: avgH };
-  const temperature = estimateTemperatureOklch(avgColor);
-
-  // Perceptual lightness contrast: std dev of OKLCH L
-  const varianceL = oklchValues.reduce((sum, [l]) => sum + Math.pow(l - avgL, 2), 0) / oklchValues.length;
-  const contrast = Math.min(100, Math.sqrt(varianceL) * 200);
-
-  // Extract dominant colors via K-means in OKLCH space
-  const dominantOklch = kmeansOklch(oklchValues, 5);
-  const dominantColorsHex = dominantOklch.map(c => oklchToHex(c.l, c.c, c.h));
-
-  return {
-    temperature,
-    perceptualSaturation: Math.min(100, avgC * 250),
-    contrast,
-    perceptualLightness: avgL * 100,
-    sharpness: estimateSharpness(imageData),
-    dominantColors: dominantOklch,
-    dominantColorsHex,
-    averageChroma: avgC,
-    vignette: detectVignette(imageData),
-  };
-}
-
-/**
- * K-means clustering in OKLCH space.
- * More accurate than RGB K-means because OKLCH distances are perceptually uniform.
- */
-function kmeansOklch(
-  samples: [number, number, number][],
-  k: number,
-  iterations: number = 8
-): OklchColor[] {
-  if (samples.length <= k) {
-    return samples.map(([l, c, h]) => ({ l, c, h }));
-  }
-
-  // Initialize centroids with evenly spaced samples
-  const step = Math.floor(samples.length / k);
-  let centroids = Array.from({ length: k }, (_, i) => [...samples[i * step]] as [number, number, number]);
-
-  for (let iter = 0; iter < iterations; iter++) {
-    const clusters: [number, number, number][][] = Array.from({ length: k }, () => []);
-
-    // Assign each sample to nearest centroid
-    for (const sample of samples) {
-      let minDist = Infinity;
-      let nearest = 0;
-
-      for (let ci = 0; ci < k; ci++) {
-        // OKLCH distance: weighted L, C, H
-        const dL = sample[0] - centroids[ci][0];
-        const dC = sample[1] - centroids[ci][1];
-        // Hue distance wraps around 360
-        let dH = Math.abs(sample[2] - centroids[ci][2]);
-        if (dH > 180) dH = 360 - dH;
-
-        const dist = dL * dL * 4 + dC * dC * 2 + (dH / 360) * (dH / 360);
-        if (dist < minDist) {
-          minDist = dist;
-          nearest = ci;
-        }
-      }
-
-      clusters[nearest].push(sample);
-    }
-
-    // Update centroids
-    centroids = clusters.map((cluster, i) => {
-      if (cluster.length === 0) return centroids[i];
-      const avgL = cluster.reduce((s, [l]) => s + l, 0) / cluster.length;
-      const avgC = cluster.reduce((s, [, c]) => s + c, 0) / cluster.length;
-      // Circular mean for hue (handles wrap-around correctly)
-      const sinSum = cluster.reduce((s, [, , h]) => s + Math.sin(h * Math.PI / 180), 0);
-      const cosSum = cluster.reduce((s, [, , h]) => s + Math.cos(h * Math.PI / 180), 0);
-      const avgH = ((Math.atan2(sinSum, cosSum) * 180 / Math.PI) % 360 + 360) % 360;
-      return [avgL, avgC, avgH] as [number, number, number];
-    });
-  }
-
-  return centroids.map(([l, c, h]) => ({ l, c, h }));
 }
 
 export function estimateSharpness(imageData: ImageData): number {

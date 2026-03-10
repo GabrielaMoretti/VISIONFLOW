@@ -689,4 +689,66 @@ echo "Dependencies installed successfully!"
 
 ---
 
+## ⚡ Newly Integrated Libraries (v2 — OKLCH Pipeline)
+
+### Frontend
+
+#### Culori (npm: culori)
+**Purpose**: Core color science — OKLCH, OKLab, Display-P3, ΔE2000
+**Status**: ✅ Integrated in `lib/color/colorSpaces.ts`
+**Impact**: Replaces hand-rolled HSL math with perceptually uniform OKLCH.
+Every hue rotation and saturation adjustment is now visually consistent.
+
+#### Color.js (npm: colorjs.io)
+**Purpose**: Gamut mapping, color space conversions, Display-P3 export
+**Status**: ✅ Installed, available for wide-gamut workflows
+
+#### regl (npm: regl)
+**Purpose**: Functional WebGL abstraction for shader pipeline management
+**Status**: ✅ Integrated in `lib/shaders/shaderManager.ts`
+**Impact**: Clean API for GPU-based color grading. The `ShaderPipeline` class
+connects mood adjustments directly to GLSL shaders via `renderMood()`.
+
+### Backend (Python)
+
+#### colour-science (pip: colour-science)
+**Purpose**: Bradford chromatic adaptation, precise CCT (Kelvin), XYZ/xyY
+**Status**: ✅ Integrated in `processing/color_flow.py`
+**Impact**: `estimateColorTemperature` is now physically accurate instead of
+hue-based approximation. Returns real Kelvin values.
+
+#### rembg (pip: rembg)
+**Purpose**: Zero-config background removal via U²-Net
+**Status**: ✅ Integrated in `processing/segmentation.py`
+**Impact**: Background removal works out of the box — model downloads
+automatically on first use (~170MB).
+
+#### Real-ESRGAN via ONNX Runtime (pip: onnxruntime)
+**Purpose**: AI super-resolution (4x upscaling)
+**Status**: ✅ Integrated in `processing/upscaling.py`
+**Impact**: ~17MB ONNX model, processes in tiles for memory efficiency.
+Includes bicubic fallback when model is unavailable.
+
+### Shader Pipeline
+
+#### GLSL Color Spaces (inline, based on glsl-color-spaces)
+**Purpose**: sRGB ↔ Linear, OKLab, OKLCH conversions on GPU
+**Status**: ✅ Integrated in `lib/shaders/colorGrading.glsl`
+**Impact**: All color grading happens in linear space, eliminating the
+"heavy/filtered" look caused by gamma-encoded math.
+
+#### Filmic Tonemapping (Blender-style)
+**Purpose**: Cinematic S-curve with highlight rolloff and shadow lift
+**Status**: ✅ Implemented in `lib/color/toneMapping.ts` + GLSL
+**Impact**: 5 preset curves (default, high contrast, very high contrast,
+low contrast, classic film). Automatic preset selection based on mood.
+
+#### Hald CLUT / .cube LUT System
+**Purpose**: 3D color lookup tables for instant cinematic grading
+**Status**: ✅ Implemented in `lib/color/lut.ts`
+**Impact**: Supports both Hald CLUT images (PNG) and .cube files (Adobe/Resolve).
+Trilinear interpolation for smooth transitions. Identity CLUT generator included.
+
+---
+
 See `IMPLEMENTATION_GUIDE.md` for integration examples.
