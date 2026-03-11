@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { LENS_PROFILES, getLensProfileById } from '../lib/lens/lensProfiles';
 import { LENS_PRESETS, getPresetById, type LensPreset } from '../lib/lens/lensPresets';
 import type { MoodAdjustment } from '../utils/moodMapping';
+import { InfoTooltip } from './InfoTooltip';
 
 interface VirtualLensPanelProps {
   onAddToColorFlow: (payload: {
@@ -76,6 +77,12 @@ export function VirtualLensPanel({ onAddToColorFlow, onApplyColorGrading }: Virt
       ? '🌈 CA media'
       : '✓ CA baixa';
 
+  const apertureGuidance = aperture <= 2
+    ? 'Abertura maxima — bokeh intenso, CA visivel, ideal para retratos'
+    : aperture <= 4
+      ? 'Abertura intermediaria — bokeh suave, boa nitidez'
+      : 'Abertura fechada — distorcao reduzida, tudo em foco';
+
   return (
     <div style={{ background: '#18181b', border: '1px solid #3f3f46', borderRadius: 12, padding: 14 }}>
       <h3 style={{ color: '#fafafa', margin: '0 0 10px 0', fontSize: 14, fontWeight: 600 }}>🔭 Virtual Lens</h3>
@@ -130,7 +137,10 @@ export function VirtualLensPanel({ onAddToColorFlow, onApplyColorGrading }: Virt
 
       <div style={{ color: '#a1a1aa', fontSize: 11, marginBottom: 10 }}>{profile.description}</div>
 
-      <label style={{ color: '#a1a1aa', fontSize: 12, display: 'block', marginBottom: 6 }}>Aperture: f/{aperture.toFixed(1)}</label>
+      <label style={{ color: '#a1a1aa', fontSize: 12, display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
+        <span>Aperture: f/{aperture.toFixed(1)}</span>
+        <InfoTooltip tooltipKey="bokeh" />
+      </label>
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 10 }}>
         {F_STOPS.map((f) => (
           <button
@@ -152,11 +162,22 @@ export function VirtualLensPanel({ onAddToColorFlow, onApplyColorGrading }: Virt
         ))}
       </div>
 
-      <div style={{ display: 'flex', gap: 10, alignItems: 'center', color: '#a1a1aa', fontSize: 11, marginBottom: 12, padding: 8, borderRadius: 8, background: 'rgba(39,39,42,0.55)' }}>
+      <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap', color: '#a1a1aa', fontSize: 11, marginBottom: 6, padding: 8, borderRadius: 8, background: 'rgba(39,39,42,0.55)' }}>
         <span title="Bokeh shape">{bokehShapePreview[profile.bokeh.shape] ?? '●'} bokeh</span>
-        <span title="Distorcao">{distortionLabel}</span>
-        <span title="Aberracao cromatica">{caLabel}</span>
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+          <span>{distortionLabel}</span>
+          <InfoTooltip tooltipKey="distortion" />
+        </span>
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+          <span>{caLabel}</span>
+          <InfoTooltip tooltipKey="chromaticAberration" />
+        </span>
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+          <span>◉ vinheta</span>
+          <InfoTooltip tooltipKey="vignette" />
+        </span>
       </div>
+      <div style={{ color: '#71717a', fontSize: 11, marginBottom: 12 }}>{apertureGuidance}</div>
 
       <div style={{ display: 'grid', gap: 6, marginBottom: 12 }}>
         <label style={{ color: '#d4d4d8', fontSize: 12, display: 'flex', gap: 8, alignItems: 'center' }}>

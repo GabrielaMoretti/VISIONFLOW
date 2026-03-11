@@ -7,7 +7,7 @@
  * This file is web-only (.web.tsx) — Metro resolves it for Platform.OS === 'web'.
  */
 
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { useEdgesState, useNodesState } from '@xyflow/react';
 import {
   processImageData,
@@ -23,7 +23,7 @@ import {
   type QuickAnalysis,
   type MoodPreset,
 } from '../processing/canvasProcessor';
-import { analyzeTextMoodEnhanced } from '../utils/moodMapping';
+import { analyzeTextMoodEnhanced, blendMoodAdjustments } from '../utils/moodMapping';
 import {
   ColorFlowGraph,
   COLOR_FLOW_INITIAL_EDGES,
@@ -32,11 +32,15 @@ import {
 import { TexturePanel } from '../components/TexturePanel/TexturePanel';
 import { VirtualLensPanel } from '../components/VirtualLensPanel';
 import { CampaignWizard } from '../components/Campaign/CampaignWizard';
+import { SafeZoneOverlay } from '../components/Preview/SafeZoneOverlay';
+import { HistogramDisplay } from '../components/HistogramDisplay';
+import { InfoTooltip } from '../components/InfoTooltip';
 import type { TextureLayer } from '../lib/textures/textureSystem';
 import type { MoodAdjustment } from '../utils/moodMapping';
 import { loadImageAsImageData, exportCanvasAsBlob } from '../lib/colorflow/imageLoader';
 import { useColorFlowRenderer } from '../hooks/useColorFlowRenderer';
 import { applyMoodToNodes } from '../lib/colorflow/moodToNodes';
+import { getSpecById } from '../lib/campaign/platformSpecs';
 
 // ─── Theme (inlined for zero-dep web component) ─────────────────────────────
 
@@ -50,6 +54,20 @@ const C = {
 } as const;
 
 const PREVIEW_MAX = 800;
+
+const NODE_BADGE_COLORS: Record<string, string> = {
+  imageInput: '#64748b',
+  whiteBalance: '#38bdf8',
+  curves: '#22c55e',
+  splitToning: '#14b8a6',
+  saturation: '#a855f7',
+  vignette: '#71717a',
+  sharpen: '#facc15',
+  grain: '#a16207',
+  vhs: '#eab308',
+  lens: '#f97316',
+  output: '#0d9488',
+};
 
 function applyMoodAdjustment(base: ProcessingParams, mood: MoodAdjustment): ProcessingParams {
   return {
@@ -103,15 +121,34 @@ function applyPanelParamsToNodes(nodes: any[], params: ProcessingParams): any[] 
   });
 }
 
+function processingParamsToMoodAdjustment(params: ProcessingParams): MoodAdjustment {
+  return {
+    temperatureDelta: params.temperature,
+    hslSaturation: params.saturation,
+    hslLightness: params.lightness,
+    contrastDelta: params.contrast,
+    vignetteAmount: params.vignette,
+    hslHueDelta: params.hue,
+    sharpenAmount: params.sharpen,
+    splitHighlightHue: params.splitHighlightHue,
+    splitHighlightSat: params.splitHighlightSat,
+    splitShadowHue: params.splitShadowHue,
+    splitShadowSat: params.splitShadowSat,
+  };
+}
+
 // ─── Slider sub-component ───────────────────────────────────────────────────
 
-function Slider({ label, value, min, max, onChange, unit = '' }: {
+function Slider({ label, value, min, max, onChange, unit = '', tooltipKey }: {
   label: string; value: number; min: number; max: number;
-  onChange: (v: number) => void; unit?: string;
+  onChange: (v: number) => void; unit?: string; tooltipKey?: string;
 }) {
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
-      <span style={{ color: C.textSecondary, fontSize: 12, width: 90, flexShrink: 0 }}>{label}</span>
+      <span style={{ color: C.textSecondary, fontSize: 12, width: 90, flexShrink: 0, display: 'flex', alignItems: 'center', gap: 6 }}>
+        <span>{label}</span>
+        {tooltipKey ? <InfoTooltip tooltipKey={tooltipKey} /> : null}
+      </span>
       <input type="range" min={min} max={max} value={value} step={1}
         onChange={e => onChange(Number(e.target.value))}
         style={{ flex: 1, accentColor: C.accent, height: 4, cursor: 'pointer' }} />
@@ -170,7 +207,13 @@ export default function CreationStudioScreen() {
   const [textureStack, setTextureStack] = useState<TextureLayer[]>([]);
   const [isFlowDrawerOpen, setIsFlowDrawerOpen] = useState(true);
   const [isFlowDrawerExpanded, setIsFlowDrawerExpanded] = useState(false);
+  const [showOriginal, setShowOriginal] = useState(false);
+  const [statusBadge, setStatusBadge] = useState<'ORIGINAL' | 'PROCESSADO' | null>(null);
+  const [showMoodSuggestions, setShowMoodSuggestions] = useState(false);
+  const [activePlatformId, setActivePlatformId] = useState<string | null>(null);
+  const [lastMoodAdjustment, setLastMoodAdjustment] = useState<MoodAdjustment | null>(null);
   const [originalImageData, setOriginalImageData] = useState<ImageData | null>(null);
+  const [processedImageData, setProcessedImageData] = useState<ImageData | null>(null);
   const [nodes, setNodes, onNodesChange] = useNodesState(
     COLOR_FLOW_INITIAL_NODES.map((n) => ({
       ...n,
@@ -186,12 +229,36 @@ export default function CreationStudioScreen() {
   const procCanvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const moodInputRef = useRef<HTMLInputElement>(null);
+  const moodSuggestionsRef = useRef<HTMLDivElement>(null);
+
+  const filteredMoodSuggestions = useMemo(() => {
+    const q = moodText.trim().toLowerCase();
+    const base = q
+      ? MOOD_PRESETS.filter((preset) =>
+          preset.name.toLowerCase().includes(q) || preset.keywords.some((k) => k.toLowerCase().includes(q))
+        )
+      : MOOD_PRESETS;
+    return base.slice(0, 12);
+  }, [moodText]);
+
+  const groupedMoodSuggestions = useMemo(() => {
+    const groups = new Map<string, MoodPreset[]>();
+    filteredMoodSuggestions.forEach((preset) => {
+      const bucket = preset.category || 'outros';
+      const current = groups.get(bucket) ?? [];
+      current.push(preset);
+      groups.set(bucket, current);
+    });
+    return Array.from(groups.entries());
+  }, [filteredMoodSuggestions]);
 
   const { renderState, forceRender } = useColorFlowRenderer({
     canvasRef: procCanvasRef,
     originalImageData,
     nodes,
     edges,
+    textureLayers: textureStack,
     debounceMs: 120,
   });
 
@@ -205,6 +272,18 @@ export default function CreationStudioScreen() {
     if (!origDataRef.current || !hasImage) return;
     drawOriginal(origDataRef.current);
   }, [hasImage, drawOriginal]);
+
+  useEffect(() => {
+    if (!procCanvasRef.current || !hasImage) return;
+    const ctx = procCanvasRef.current.getContext('2d');
+    if (!ctx) return;
+    try {
+      const captured = ctx.getImageData(0, 0, procCanvasRef.current.width, procCanvasRef.current.height);
+      setProcessedImageData(captured);
+    } catch {
+      // Keep previous histogram if canvas is not ready yet.
+    }
+  }, [renderState.lastRenderTime, hasImage]);
 
   // ─── Before/After drag ────────────────────────────────────────────────────
 
@@ -221,6 +300,45 @@ export default function CreationStudioScreen() {
     window.addEventListener('mouseup', handleUp);
     return () => { window.removeEventListener('mousemove', handleMove); window.removeEventListener('mouseup', handleUp); };
   }, [isDragging]);
+
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key.toLowerCase() === 'o') {
+        setShowOriginal(true);
+      }
+      if (e.key === 'Escape') {
+        setShowMoodSuggestions(false);
+      }
+    };
+    const onKeyUp = (e: KeyboardEvent) => {
+      if (e.key.toLowerCase() === 'o') {
+        setShowOriginal(false);
+      }
+    };
+
+    document.addEventListener('keydown', onKeyDown);
+    document.addEventListener('keyup', onKeyUp);
+    return () => {
+      document.removeEventListener('keydown', onKeyDown);
+      document.removeEventListener('keyup', onKeyUp);
+    };
+  }, []);
+
+  useEffect(() => {
+    setStatusBadge(showOriginal ? 'ORIGINAL' : 'PROCESSADO');
+    const t = setTimeout(() => setStatusBadge(null), 1000);
+    return () => clearTimeout(t);
+  }, [showOriginal]);
+
+  useEffect(() => {
+    const onMouseDown = (e: MouseEvent) => {
+      const target = e.target as Node;
+      if (moodInputRef.current?.contains(target) || moodSuggestionsRef.current?.contains(target)) return;
+      setShowMoodSuggestions(false);
+    };
+    document.addEventListener('mousedown', onMouseDown);
+    return () => document.removeEventListener('mousedown', onMouseDown);
+  }, []);
 
   // ─── File handling ────────────────────────────────────────────────────────
 
@@ -260,6 +378,7 @@ export default function CreationStudioScreen() {
           setModelTag(enhanced.modelUsed);
           setActiveMoods([enhanced.topAnchor]);
           setConfidence(Math.round(enhanced.similarity * 100));
+          setLastMoodAdjustment(enhanced.adjustments);
           setParams((prev) => applyMoodAdjustment(prev, enhanced.adjustments));
           setNodes((prev: any[]) => applyMoodToNodes(prev, enhanced.adjustments));
           return;
@@ -269,6 +388,7 @@ export default function CreationStudioScreen() {
       setModelTag('keyword');
       setActiveMoods(result.moods);
       setConfidence(result.confidence);
+      setLastMoodAdjustment(processingParamsToMoodAdjustment(result.params));
       setParams(result.params);
       setNodes((prev: any[]) => applyPanelParamsToNodes(prev, result.params));
     })();
@@ -289,6 +409,7 @@ export default function CreationStudioScreen() {
       const v = scaled[key];
       if (typeof v === 'number') (scaled as any)[key] = Math.round(v * factor);
     }
+    setLastMoodAdjustment(processingParamsToMoodAdjustment(scaled));
     setParams(scaled);
     setNodes((prev: any[]) => applyPanelParamsToNodes(prev, scaled));
   }, [intensity, setNodes]);
@@ -438,11 +559,15 @@ export default function CreationStudioScreen() {
   }, [nodes, edges, setNodes, setEdges]);
 
   const handleLensPresetColorGrading = useCallback((adjustment: MoodAdjustment) => {
-    setNodes((prev) => applyMoodToNodes(prev, adjustment));
-    setParams((prev) => applyMoodAdjustment(prev, adjustment));
-  }, [setNodes]);
+    const blended = lastMoodAdjustment
+      ? blendMoodAdjustments(lastMoodAdjustment, adjustment, 0.4)
+      : adjustment;
+    setNodes((prev) => applyMoodToNodes(prev, blended));
+    setParams((prev) => applyMoodAdjustment(prev, blended));
+  }, [setNodes, lastMoodAdjustment]);
 
   const handleCampaignApplyLook = useCallback((adjustment: MoodAdjustment) => {
+    setLastMoodAdjustment(adjustment);
     setNodes((prev) => applyMoodToNodes(prev, adjustment));
     setParams((prev) => applyMoodAdjustment(prev, adjustment));
     setActiveTab('editor');
@@ -519,11 +644,13 @@ export default function CreationStudioScreen() {
               <canvas ref={procCanvasRef} width={imgDims.w} height={imgDims.h}
                 style={{
                   ...S.canvasBase, ...S.canvasOverlay,
-                  clipPath: `inset(0 ${Math.round((1 - sliderPos) * 100)}% 0 0)`,
+                  clipPath: showOriginal ? 'inset(0 100% 0 0)' : `inset(0 ${Math.round((1 - sliderPos) * 100)}% 0 0)`,
+                  opacity: showOriginal ? 0 : 1,
+                  transition: 'opacity 0.3s ease',
                 }} />
 
               {/* Divider */}
-              <div
+              {!showOriginal && <div
                 style={{
                   position: 'absolute', top: 0, bottom: 0, width: 2,
                   left: `${sliderPos * 100}%`, transform: 'translateX(-1px)',
@@ -543,11 +670,72 @@ export default function CreationStudioScreen() {
                 }}>
                   <span style={{ color: C.bg, fontSize: 14, fontWeight: 800 }}>⟨⟩</span>
                 </div>
+              </div>}
+
+              <div style={{ position: 'absolute', top: 10, right: 10, zIndex: 12, display: 'flex', gap: 6 }}>
+                <button
+                  onClick={() => setActivePlatformId(null)}
+                  style={{ ...S.platformToggleBtn, ...(activePlatformId === null ? S.platformToggleBtnActive : {}) }}
+                >
+                  Off
+                </button>
+                <button
+                  onClick={() => setActivePlatformId('ig-post-portrait')}
+                  style={{ ...S.platformToggleBtn, ...(activePlatformId === 'ig-post-portrait' ? S.platformToggleBtnActive : {}) }}
+                >
+                  IG Post
+                </button>
+                <button
+                  onClick={() => setActivePlatformId('ig-story')}
+                  style={{ ...S.platformToggleBtn, ...(activePlatformId === 'ig-story' ? S.platformToggleBtnActive : {}) }}
+                >
+                  IG Story
+                </button>
+                <button
+                  onClick={() => setActivePlatformId('yt-thumbnail')}
+                  style={{ ...S.platformToggleBtn, ...(activePlatformId === 'yt-thumbnail' ? S.platformToggleBtnActive : {}) }}
+                >
+                  YT
+                </button>
+                <button
+                  onClick={() => setActivePlatformId('spotify-canvas')}
+                  style={{ ...S.platformToggleBtn, ...(activePlatformId === 'spotify-canvas' ? S.platformToggleBtnActive : {}) }}
+                >
+                  Spotify
+                </button>
+                <button
+                  onClick={() => setShowOriginal(false)}
+                  style={{ ...S.modeToggleBtn, ...(showOriginal ? {} : S.modeToggleBtnActive) }}
+                >
+                  Editado
+                </button>
+                <button
+                  onClick={() => setShowOriginal(true)}
+                  style={{ ...S.modeToggleBtn, ...(showOriginal ? S.modeToggleBtnActive : {}) }}
+                >
+                  Original
+                </button>
               </div>
 
               {/* Labels */}
               <div style={{ ...S.canvasLabel, left: 12 }}>ORIGINAL</div>
               <div style={{ ...S.canvasLabel, right: 12 }}>EDITADA</div>
+              {statusBadge && (
+                <div style={{ ...S.renderBadge, ...(statusBadge === 'ORIGINAL' ? S.renderBadgeOriginal : S.renderBadgeProcessed) }}>
+                  {statusBadge}
+                </div>
+              )}
+              {activePlatformId !== null && (() => {
+                const spec = getSpecById(activePlatformId);
+                if (!spec) return null;
+                return (
+                  <SafeZoneOverlay
+                    spec={spec}
+                    containerWidth={imgDims.w || 1}
+                    containerHeight={imgDims.h || 1}
+                  />
+                );
+              })()}
             </div>
           )}
 
@@ -572,15 +760,42 @@ export default function CreationStudioScreen() {
           )}
 
           {hasImage && (
+            <div style={S.histogramWrap}>
+              <div style={S.histogramLabel}>HISTOGRAMA</div>
+              <HistogramDisplay imageData={showOriginal ? originalImageData : (processedImageData ?? originalImageData)} height={64} />
+            </div>
+          )}
+
+          {hasImage && (
             <div style={S.pipelineStatusBar}>
-              {renderState.isRendering ? (
-                <span style={{ color: C.teal }}>⟳ Renderizando...</span>
-              ) : renderState.lastRenderTime ? (
-                <span>
-                  ✓ {renderState.lastRenderTime.toFixed(0)}ms — {renderState.nodesExecuted.join(' → ')}
+              <div style={S.pipelineNodesRow}>
+                {renderState.nodesExecuted.map((nodeType, idx) => (
+                  <React.Fragment key={`${nodeType}-${idx}`}>
+                    <span
+                      style={{
+                        ...S.pipelineNodeBadge,
+                        borderColor: NODE_BADGE_COLORS[nodeType] ?? C.border,
+                        color: NODE_BADGE_COLORS[nodeType] ?? C.textSecondary,
+                        opacity: renderState.isRendering ? 0.88 : 1,
+                      }}
+                    >
+                      ■ {nodeType}
+                    </span>
+                    {idx < renderState.nodesExecuted.length - 1 && <span style={S.pipelineArrow}>→</span>}
+                  </React.Fragment>
+                ))}
+              </div>
+              {renderState.lastRenderTime !== null && (
+                <span
+                  style={{
+                    ...S.pipelineTime,
+                    color: renderState.lastRenderTime < 100 ? '#4ADE80' : renderState.lastRenderTime < 500 ? '#FBBF24' : C.error,
+                  }}
+                >
+                  ⚡ {renderState.lastRenderTime.toFixed(0)}ms
                 </span>
-              ) : null}
-              {renderState.error && <span style={{ color: C.error }}>⚠ {renderState.error}</span>}
+              )}
+              {renderState.error && <span style={{ color: C.error }}>⚠ pipeline error: {renderState.error}</span>}
               <button
                 onClick={() => {
                   void handleExport('jpeg');
@@ -694,16 +909,50 @@ export default function CreationStudioScreen() {
               </div>
 
               {/* Text input */}
-              <div style={{ display: 'flex', gap: 8, marginBottom: 14 }}>
+              <div style={{ display: 'flex', gap: 8, marginBottom: 14, position: 'relative' }}>
                 <input
+                  ref={moodInputRef}
                   type="text"
                   value={moodText}
                   onChange={e => setMoodText(e.target.value)}
-                  onKeyDown={e => e.key === 'Enter' && handleAnalyzeMood()}
+                  onKeyDown={e => {
+                    if (e.key === 'Enter') {
+                      setShowMoodSuggestions(false);
+                      handleAnalyzeMood();
+                    }
+                    if (e.key === 'Escape') {
+                      setShowMoodSuggestions(false);
+                    }
+                  }}
+                  onFocus={() => setShowMoodSuggestions(true)}
                   placeholder="Ex: cinematic melancholic sunset"
                   style={S.textInput}
                 />
                 <button onClick={handleAnalyzeMood} style={S.accentBtn}>Analisar</button>
+                {showMoodSuggestions && groupedMoodSuggestions.length > 0 && (
+                  <div ref={moodSuggestionsRef} style={S.moodSuggestionsDropdown}>
+                    {groupedMoodSuggestions.map(([category, presets]) => (
+                      <div key={category} style={{ marginBottom: 8 }}>
+                        <div style={S.moodSuggestionsCategory}>{category}</div>
+                        {presets.map((preset) => (
+                          <button
+                            key={preset.name}
+                            onClick={() => {
+                              setMoodText(preset.name);
+                              setShowMoodSuggestions(false);
+                              handleMoodPreset(preset.name);
+                            }}
+                            style={S.moodSuggestionBtn}
+                          >
+                            <span style={{ ...S.moodSuggestionDot, background: preset.accent }} />
+                            <span style={{ flex: 1, textAlign: 'left' }}>{preset.name}</span>
+                            <span style={S.moodSuggestionKeywords}>{preset.keywords.slice(0, 2).join(', ')}</span>
+                          </button>
+                        ))}
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
 
               {/* Preset grid */}
@@ -723,17 +972,17 @@ export default function CreationStudioScreen() {
             <section style={S.section}>
               <h3 style={S.sectionTitle}>AJUSTES</h3>
               <Slider label="Temperatura" value={params.temperature} min={-50} max={50}
-                onChange={v => handleParamChange('temperature', v)} unit="°" />
+                onChange={v => handleParamChange('temperature', v)} unit="°" tooltipKey="temperature" />
               <Slider label="Saturação" value={params.saturation} min={-80} max={25}
-                onChange={v => handleParamChange('saturation', v)} />
+                onChange={v => handleParamChange('saturation', v)} tooltipKey="saturation" />
               <Slider label="Contraste" value={params.contrast} min={-20} max={20}
-                onChange={v => handleParamChange('contrast', v)} />
+                onChange={v => handleParamChange('contrast', v)} tooltipKey="contrast" />
               <Slider label="Luminosidade" value={params.lightness} min={-15} max={15}
-                onChange={v => handleParamChange('lightness', v)} />
+                onChange={v => handleParamChange('lightness', v)} tooltipKey="lightness" />
               <Slider label="Vinheta" value={params.vignette} min={0} max={40}
-                onChange={v => handleParamChange('vignette', v)} />
+                onChange={v => handleParamChange('vignette', v)} tooltipKey="vignette" />
               <Slider label="Matiz" value={params.hue} min={-30} max={30}
-                onChange={v => handleParamChange('hue', v)} unit="°" />
+                onChange={v => handleParamChange('hue', v)} unit="°" tooltipKey="hue" />
             </section>
 
             {/* ─── Intensity ─── */}
@@ -866,6 +1115,56 @@ const S: Record<string, React.CSSProperties> = {
     letterSpacing: 1, zIndex: 5,
     userSelect: 'none' as const,
   },
+  modeToggleBtn: {
+    border: `1px solid ${C.border}`,
+    background: 'rgba(10,10,18,0.7)',
+    color: C.textSecondary,
+    borderRadius: 6,
+    fontSize: 11,
+    padding: '4px 8px',
+    cursor: 'pointer',
+  },
+  platformToggleBtn: {
+    border: `1px solid ${C.border}`,
+    background: 'rgba(10,10,18,0.7)',
+    color: C.textSecondary,
+    borderRadius: 6,
+    fontSize: 10,
+    padding: '4px 7px',
+    cursor: 'pointer',
+  },
+  platformToggleBtnActive: {
+    border: '1px solid rgba(239,68,68,0.8)',
+    background: 'rgba(127,29,29,0.5)',
+    color: '#fecaca',
+  },
+  modeToggleBtnActive: {
+    border: `1px solid ${C.accent}`,
+    background: C.accentMuted,
+    color: C.accent,
+  },
+  renderBadge: {
+    position: 'absolute' as const,
+    left: '50%',
+    transform: 'translateX(-50%)',
+    bottom: 12,
+    fontSize: 11,
+    fontWeight: 700,
+    borderRadius: 999,
+    padding: '4px 10px',
+    letterSpacing: 0.8,
+    zIndex: 12,
+  },
+  renderBadgeOriginal: {
+    color: '#fecaca',
+    background: 'rgba(127,29,29,0.75)',
+    border: '1px solid rgba(239,68,68,0.7)',
+  },
+  renderBadgeProcessed: {
+    color: '#bbf7d0',
+    background: 'rgba(20,83,45,0.75)',
+    border: '1px solid rgba(34,197,94,0.7)',
+  },
 
   // Analysis bar
   analysisBar: {
@@ -873,8 +1172,64 @@ const S: Record<string, React.CSSProperties> = {
     background: C.bgSurface, borderRadius: 10, padding: '10px 16px',
     border: `1px solid ${C.border}`,
   },
+  histogramWrap: {
+    background: C.bgSurface,
+    borderRadius: 10,
+    padding: '8px 10px',
+    border: `1px solid ${C.border}`,
+  },
+  histogramLabel: {
+    color: C.textMuted,
+    fontSize: 10,
+    letterSpacing: 1,
+    marginBottom: 4,
+  },
   metricChip: {
     color: C.textSecondary, fontSize: 12,
+  },
+  pipelineStatusBar: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 10,
+    flexWrap: 'wrap' as const,
+    background: C.bgSurface,
+    borderRadius: 10,
+    border: `1px solid ${C.border}`,
+    padding: '8px 10px',
+  },
+  pipelineNodesRow: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 6,
+    flexWrap: 'wrap' as const,
+    flex: 1,
+    minWidth: 0,
+  },
+  pipelineNodeBadge: {
+    border: '1px solid',
+    borderRadius: 6,
+    padding: '2px 6px',
+    fontSize: 11,
+    fontFamily: 'monospace',
+    background: 'rgba(9,9,11,0.75)',
+  },
+  pipelineArrow: {
+    color: C.textMuted,
+    fontSize: 11,
+  },
+  pipelineTime: {
+    fontSize: 12,
+    fontWeight: 700,
+    minWidth: 70,
+  },
+  pipelineExportBtn: {
+    border: `1px solid ${C.border}`,
+    background: C.bgElevated,
+    color: C.textSecondary,
+    borderRadius: 6,
+    fontSize: 11,
+    padding: '5px 10px',
+    cursor: 'pointer',
   },
 
   // Right panel
@@ -932,6 +1287,56 @@ const S: Record<string, React.CSSProperties> = {
     background: C.bgElevated, color: C.textPrimary,
     border: `1px solid ${C.border}`, fontSize: 13,
     outline: 'none',
+  },
+  moodSuggestionsDropdown: {
+    position: 'absolute' as const,
+    left: 0,
+    right: 84,
+    top: 40,
+    zIndex: 100,
+    maxHeight: 260,
+    overflowY: 'auto' as const,
+    border: `1px solid ${C.border}`,
+    borderRadius: 8,
+    background: '#18181b',
+    padding: 8,
+    boxShadow: '0 12px 28px rgba(0,0,0,0.45)',
+  },
+  moodSuggestionsCategory: {
+    color: C.textMuted,
+    fontSize: 10,
+    textTransform: 'uppercase' as const,
+    letterSpacing: 1.1,
+    marginBottom: 4,
+  },
+  moodSuggestionBtn: {
+    width: '100%',
+    border: `1px solid ${C.border}`,
+    background: '#27272a',
+    color: '#e4e4e7',
+    borderRadius: 6,
+    padding: '6px 8px',
+    cursor: 'pointer',
+    display: 'flex',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 6,
+    fontSize: 12,
+  },
+  moodSuggestionDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 999,
+    display: 'inline-block',
+    flexShrink: 0,
+  },
+  moodSuggestionKeywords: {
+    color: C.textMuted,
+    fontSize: 10,
+    whiteSpace: 'nowrap' as const,
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+    maxWidth: 110,
   },
   accentBtn: {
     padding: '8px 16px', borderRadius: 8,

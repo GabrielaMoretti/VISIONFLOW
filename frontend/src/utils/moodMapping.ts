@@ -523,6 +523,52 @@ function clamp01(v: number): number {
   return Math.max(0, Math.min(1, v));
 }
 
+/**
+ * Blend two mood adjustment sets.
+ * Numeric fields are linearly blended. Absolute hue fields prefer overlay when present.
+ */
+export function blendMoodAdjustments(
+  base: MoodAdjustment,
+  overlay: MoodAdjustment,
+  weight: number = 0.5
+): MoodAdjustment {
+  const w = clamp01(weight);
+  const numericKeys: (keyof MoodAdjustment)[] = [
+    'hslHueDelta',
+    'hslSaturation',
+    'hslLightness',
+    'vignetteAmount',
+    'sharpenAmount',
+    'splitHighlightHue',
+    'splitHighlightSat',
+    'splitShadowHue',
+    'splitShadowSat',
+    'contrastDelta',
+    'temperatureDelta',
+  ];
+
+  const absoluteHueKeys = new Set<keyof MoodAdjustment>(['splitHighlightHue', 'splitShadowHue']);
+  const out: MoodAdjustment = {};
+
+  numericKeys.forEach((key) => {
+    const baseVal = base[key];
+    const overlayVal = overlay[key];
+
+    if (absoluteHueKeys.has(key)) {
+      if (overlayVal !== undefined) out[key] = overlayVal;
+      else if (baseVal !== undefined) out[key] = baseVal;
+      return;
+    }
+
+    if (baseVal === undefined && overlayVal === undefined) return;
+    const b = typeof baseVal === 'number' ? baseVal : 0;
+    const o = typeof overlayVal === 'number' ? overlayVal : 0;
+    out[key] = Math.round((b * (1 - w) + o * w) * 100) / 100;
+  });
+
+  return out;
+}
+
 // ---------------------------------------------------------------------------
 // OKLCH conversion — the bridge to the new pipeline
 // ---------------------------------------------------------------------------

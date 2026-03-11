@@ -1,12 +1,14 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { Edge, Node } from '@xyflow/react';
 import { executePipeline } from '../lib/colorflow/pipelineEngine';
+import { applyTextureStack, type TextureLayer } from '../lib/textures/textureSystem';
 
 interface UseColorFlowRendererOptions {
   canvasRef: React.RefObject<HTMLCanvasElement>;
   originalImageData: ImageData | null;
   nodes: Node[];
   edges: Edge[];
+  textureLayers?: TextureLayer[];
   debounceMs?: number;
 }
 
@@ -40,6 +42,7 @@ export function useColorFlowRenderer({
   originalImageData,
   nodes,
   edges,
+  textureLayers = [],
   debounceMs = 120,
 }: UseColorFlowRendererOptions) {
   const [renderState, setRenderState] = useState<RenderState>({
@@ -62,6 +65,9 @@ export function useColorFlowRenderer({
       try {
         const source = previewMode ? downscaleImageData(originalImageData, 0.25) : originalImageData;
         const result = await executePipeline(source, nodes, edges);
+        const composited = textureLayers.length > 0
+          ? applyTextureStack(result.imageData, textureLayers)
+          : result.imageData;
 
         const canvas = canvasRef.current;
         const ctx = canvas.getContext('2d');
@@ -69,15 +75,15 @@ export function useColorFlowRenderer({
 
         if (previewMode) {
           const tmp = document.createElement('canvas');
-          tmp.width = result.imageData.width;
-          tmp.height = result.imageData.height;
-          tmp.getContext('2d')!.putImageData(result.imageData, 0, 0);
+          tmp.width = composited.width;
+          tmp.height = composited.height;
+          tmp.getContext('2d')!.putImageData(composited, 0, 0);
           ctx.clearRect(0, 0, canvas.width, canvas.height);
           ctx.drawImage(tmp, 0, 0, canvas.width, canvas.height);
         } else {
-          canvas.width = result.imageData.width;
-          canvas.height = result.imageData.height;
-          ctx.putImageData(result.imageData, 0, 0);
+          canvas.width = composited.width;
+          canvas.height = composited.height;
+          ctx.putImageData(composited, 0, 0);
         }
 
         setRenderState({
@@ -96,7 +102,7 @@ export function useColorFlowRenderer({
         runningRef.current = false;
       }
     },
-    [canvasRef, originalImageData, nodes, edges]
+    [canvasRef, originalImageData, nodes, edges, textureLayers]
   );
 
   useEffect(() => {
@@ -114,7 +120,7 @@ export function useColorFlowRenderer({
     return () => {
       if (timerRef.current) clearTimeout(timerRef.current);
     };
-  }, [nodes, edges, originalImageData, debounceMs, renderToCanvas]);
+  }, [nodes, edges, textureLayers, originalImageData, debounceMs, renderToCanvas]);
 
   return {
     renderState,
